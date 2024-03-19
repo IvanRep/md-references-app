@@ -1,0 +1,11 @@
+<label #labelElement [for]="label">{{ label }}</label>
+<input
+  [id]="label"
+  [title]="label"
+  [name]="label"
+  type="text"
+  [value]="value"
+  (input)="onInput($event)"
+  (focus)="focusController(labelElement)"
+  (blur)="focusController(labelElement)"
+/>

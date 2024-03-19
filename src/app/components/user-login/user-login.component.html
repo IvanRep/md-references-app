@@ -1,0 +1,24 @@
+<main [ngClass]="{ open: this.open }">
+  <h1 class="hide">{{ this.username }}</h1>
+  <button type="button" (click)="toggleButton()" title="Vista de usuario">
+    <app-user></app-user>
+  </button>
+  <form class="hide" (submit)="onSubmit($event)">
+    <app-login-input
+      class="hide"
+      [label]="'Nombre de usuario'"
+      (valueChange)="this.username = $event"
+    ></app-login-input>
+    <app-login-input
+      class="hide"
+      [label]="'Contraseña'"
+      (valueChange)="this.password = $event"
+    ></app-login-input>
+    <input
+      type="submit"
+      class="hide"
+      title="Iniciar sesión"
+      value="Iniciar sesión"
+    />
+  </form>
+</main>
