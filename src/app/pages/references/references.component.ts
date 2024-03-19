@@ -1,12 +1,11 @@
+import { HeaderComponent } from '@/app/components/header/header.component';
 import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-references',
   standalone: true,
-  imports: [],
+  imports: [HeaderComponent],
   templateUrl: './references.component.html',
-  styleUrl: './references.component.css'
+  styleUrl: './references.component.css',
 })
-export class ReferencesComponent {
-
-}
+export class ReferencesComponent {}
