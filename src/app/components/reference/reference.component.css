@@ -1,5 +1,8 @@
 :host {
   --reference-component-background-color: var(--bg-color, #f5f5f5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 article {
@@ -35,10 +38,6 @@ section>div {
   gap: 1rem;
 }
 
-article div p:last-child {
-  text-align: right;
-}
-
 h1 {
   margin: 0;
 }
@@ -51,6 +50,10 @@ p {
 a {
   text-decoration: none;
   color: inherit;
+}
+
+.category, .phone {
+  text-align: right;
 }
 
 .phone {
@@ -75,12 +78,13 @@ app-context-menu {
 @media (max-width: 410px) {
   article {
     flex-direction: column;
-    height: 20rem;
-    width: 70%;
+    height: 19rem;
+    width: 100%;
     min-width: 10rem;
     padding: 0;
     /* align-items: center; */
     gap: 0;
+    overflow: hidden;
   }
   article>a {
     width: 100%;
