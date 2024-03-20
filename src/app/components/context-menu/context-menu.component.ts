@@ -45,18 +45,6 @@ export class ContextMenuComponent implements OnChanges {
         windowHeight - dimensions.height
       }px`;
     }
-
-    console.log(
-      'dimensions',
-      dimensions.left + dimensions.width,
-      dimensions.top + dimensions.height
-    );
-    console.log('window', windowWidth, windowHeight);
-    console.log(
-      'final',
-      this.elRef.nativeElement.style.left,
-      this.elRef.nativeElement.style.top
-    );
   }
 
   @Input() contextMenuItems: Array<ContextMenuModel> = [];
