@@ -13,11 +13,11 @@ import { CommonModule } from '@angular/common';
 })
 export class ReferenceComponent {
   @Input() reference: Reference = {
-    name: 'Deportes Mazarracin',
-    place: 'PI. Esparto, 5, 28341 Valdemoro, Madrid, España',
-    category: 'Churros de piscina',
-    phone: '912 48 08 73',
-    website: 'https://www.deportesmazarracin.com/',
+    name: '',
+    place: '',
+    category: '',
+    phone: '',
+    website: '',
   };
 
   // Handle Context Menu -------------------------------------------------------------------------------------
