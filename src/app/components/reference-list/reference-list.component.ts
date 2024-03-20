@@ -10,7 +10,7 @@ import { ReferenceComponent } from '@/app/components/reference/reference.compone
   styleUrl: './reference-list.component.css',
 })
 export class ReferenceListComponent {
-  @Input() referencesList: Reference[] = [
+  @Input() referencesList: Reference[] | null = [
     {
       name: 'Deportes Mazarracin',
       place: 'PI. Esparto, 5, 28341 Valdemoro, Madrid, España',
