@@ -1,7 +1,7 @@
 import { CodeComponent } from '@/app/icons/code/code.component';
 import { FolderComponent } from '@/app/icons/folder/folder.component';
 import { SearchComponent } from '@/app/icons/search/search.component';
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { SearchBarComponent } from '../search-bar/search-bar.component';
 import { MarkdownService } from '@/app/services/markdown.service';
 
@@ -14,6 +14,19 @@ import { MarkdownService } from '@/app/services/markdown.service';
 })
 export class HeaderComponent {
   constructor(private markdownService: MarkdownService) {}
+
+  @HostListener('document:dragover', ['$event']) onDragOver(event: DragEvent) {
+    event.preventDefault();
+  }
+  @HostListener('document:drop', ['$event']) onDrop(e: DragEvent) {
+    e.preventDefault();
+    const file = e.dataTransfer?.files[0];
+    if (!file || !file.name.endsWith('.md')) return;
+
+    this.markdownService.setMarkdown(file);
+    console.log(file);
+  }
+
   getMarkdown() {
     const input = document.createElement('input');
     input.type = 'file';
