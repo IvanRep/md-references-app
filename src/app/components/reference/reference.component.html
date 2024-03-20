@@ -1,0 +1,29 @@
+<article (contextmenu)="displayContextMenu($event); (false)">
+  <a [href]="reference.website">
+    <img src="https://via.placeholder.com/100" alt="reference image" />
+  </a>
+  <section>
+    <div>
+      <a [href]="reference.website">
+        <h1>{{ reference.name }}</h1>
+      </a>
+      <p>{{ reference.category }}</p>
+    </div>
+    <div>
+      <a
+        [href]="'https://www.google.com/maps/place/' + reference.place"
+        class="placeLink"
+      >
+        <p class="place">{{ reference.place }}</p>
+      </a>
+      <p class="phone">{{ reference.phone }}</p>
+    </div>
+  </section>
+</article>
+
+@if( isDisplayContextMenu && rightClickMenuItems.length > 0 ) {
+<app-context-menu
+  [contextMenuItems]="rightClickMenuItems"
+  [menuPosition]="getRightClickMenuStyle()"
+></app-context-menu>
+}

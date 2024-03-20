@@ -1,0 +1,110 @@
+:host {
+  --reference-component-background-color: var(--bg-color, #f5f5f5);
+}
+
+article {
+  display: flex;
+  gap: 1rem;
+  height: 100%;
+  width: 100%;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  background-color: var(--reference-component-background-color);
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1), 0px 2px 4px rgba(0, 0, 0, 0.1),
+      0px 4px 8px rgba(0, 0, 0, 0.1), 0px 8px 16px rgba(0, 0, 0, 0.1),
+      0px 16px 32px rgba(0, 0, 0, 0.1), 0px 32px 64px rgba(0, 0, 0, 0.1);
+}
+
+img {
+  height: 100%;
+  aspect-ratio: 1/1;
+}
+section {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  height: 100%;
+  width: 100%;
+
+}
+section>div {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+article div p:last-child {
+  text-align: right;
+}
+
+h1 {
+  margin: 0;
+}
+
+p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.phone {
+  text-wrap: nowrap;
+}
+
+app-context-menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+@media (max-width: 600px) {
+  .place {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    text-wrap: nowrap;
+    max-width: 8rem;
+  }
+}
+
+@media (max-width: 410px) {
+  article {
+    flex-direction: column;
+    height: 20rem;
+    width: 70%;
+    min-width: 10rem;
+    padding: 0;
+    /* align-items: center; */
+    gap: 0;
+  }
+  article>a {
+    width: 100%;
+    height: 40%;
+  }
+  img {
+    /* height: auto; */
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    aspect-ratio: none;
+  }
+  section {
+    justify-content: space-between;
+  }
+
+  section>div {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 1rem;
+  }
+
+  .placeLink {
+    max-width: 100%;
+  }
+}

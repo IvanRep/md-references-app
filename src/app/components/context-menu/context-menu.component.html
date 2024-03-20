@@ -1,0 +1,9 @@
+<div #contextMenu>
+  @for( item of contextMenuItems; track $index ) {
+  <div class="menu-item" (click)="onClick(item.action)">
+    {{ item.menuText }}
+  </div>
+  @if( $index < contextMenuItems.length - 1 ) {
+  <div class="divider"></div>
+  } }
+</div>
