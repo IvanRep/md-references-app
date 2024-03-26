@@ -22,9 +22,13 @@ export class AlertHandlerComponent implements OnChanges {
   @Input() duration = 3000;
   @ViewChild('alert') alert!: ElementRef;
 
+  constructor(private elementRef: ElementRef) {
+    console.log(elementRef.nativeElement);
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
-    if (this.alert) {
-      const alert = this.alert.nativeElement;
+    if (this.elementRef) {
+      const alert = this.elementRef.nativeElement;
 
       alert.style.display = 'flex';
       setTimeout(() => {
