@@ -5,6 +5,7 @@ import { AlertHandlerComponent } from './components/alert-handler/alert-handler.
 import { Observable, Subscription } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
 import { MessagesDisplayService } from './services/messages-display.service';
+import { Message } from '@/app/types/Message';
 
 @Component({
   selector: 'app-root',
@@ -18,5 +19,5 @@ export class AppComponent {
   constructor(private messagesDisplayService: MessagesDisplayService) {}
 
   title = 'md-references-app';
-  alertMessage: Observable<String> = this.messagesDisplayService.subject;
+  alertMessage: Observable<Message> = this.messagesDisplayService.subject;
 }

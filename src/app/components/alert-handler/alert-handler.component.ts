@@ -1,3 +1,4 @@
+import { Message } from '@/app/types/Message';
 import {
   Component,
   ElementRef,
@@ -15,7 +16,8 @@ import {
   styleUrl: './alert-handler.component.css',
 })
 export class AlertHandlerComponent implements OnChanges {
-  @Input() message!: String | null;
+  @Input() message!: Message | null;
+  @Input() duration = 3000;
   @ViewChild('alert') alert!: ElementRef;
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -25,7 +27,7 @@ export class AlertHandlerComponent implements OnChanges {
       alert.style.display = 'flex';
       setTimeout(() => {
         alert.style.display = 'none';
-      }, 3000);
+      }, this.duration);
     }
   }
 }

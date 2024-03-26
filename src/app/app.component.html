@@ -1,2 +1,5 @@
 <router-outlet></router-outlet>
-<app-alert-handler [message]="alertMessage | async"></app-alert-handler>
+<app-alert-handler
+  [message]="alertMessage | async"
+  [duration]="2000"
+></app-alert-handler>

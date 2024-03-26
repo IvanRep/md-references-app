@@ -4,7 +4,22 @@ section {
   height: 100%;
   align-items: center;
   justify-content: center;
-  background-color: #ffdde1;
   font-weight: bold;
   font-size: 1.5rem;
+}
+
+.error {
+  background-color: #ffdde1;
+}
+
+.warning {
+  background-color: #fff7d5;
+}
+
+.success {
+  background-color: #d8f0e7;
+}
+
+.info {
+  background-color: #e7f1ff;
 }

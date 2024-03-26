@@ -4,6 +4,7 @@ import { SearchComponent } from '@/app/icons/search/search.component';
 import { Component, ErrorHandler, HostListener } from '@angular/core';
 import { SearchBarComponent } from '../search-bar/search-bar.component';
 import { MarkdownService } from '@/app/services/markdown.service';
+import { TypedError } from '@/app/error/TypedError';
 
 @Component({
   selector: 'app-header',
@@ -22,7 +23,10 @@ export class HeaderComponent {
     e.preventDefault();
     const file = e.dataTransfer?.files[0];
     if (!file || !file.name.endsWith('.md'))
-      throw new Error('Archivo no válido. Introduce un archivo .md');
+      throw new TypedError(
+        'Archivo no válido. Introduce un archivo .md',
+        'error'
+      );
 
     this.markdownService.setMarkdown(file);
     console.log(file);
