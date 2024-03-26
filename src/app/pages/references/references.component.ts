@@ -22,9 +22,8 @@ import { Observable } from 'rxjs';
 export class ReferencesComponent implements OnChanges {
   referenceList: Observable<Reference[]> = this.markdownService.referenceList$;
 
-  constructor(private markdownService: MarkdownService) {
-    console.log(this.referenceList);
-  }
+  constructor(private markdownService: MarkdownService) {}
+
   ngOnChanges(changes: SimpleChanges): void {
     console.log(changes);
   }

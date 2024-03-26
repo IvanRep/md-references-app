@@ -1,7 +1,7 @@
 import { CodeComponent } from '@/app/icons/code/code.component';
 import { FolderComponent } from '@/app/icons/folder/folder.component';
 import { SearchComponent } from '@/app/icons/search/search.component';
-import { Component, HostListener } from '@angular/core';
+import { Component, ErrorHandler, HostListener } from '@angular/core';
 import { SearchBarComponent } from '../search-bar/search-bar.component';
 import { MarkdownService } from '@/app/services/markdown.service';
 
@@ -21,7 +21,8 @@ export class HeaderComponent {
   @HostListener('document:drop', ['$event']) onDrop(e: DragEvent) {
     e.preventDefault();
     const file = e.dataTransfer?.files[0];
-    if (!file || !file.name.endsWith('.md')) return;
+    if (!file || !file.name.endsWith('.md'))
+      throw new Error('Archivo no válido. Introduce un archivo .md');
 
     this.markdownService.setMarkdown(file);
     console.log(file);
