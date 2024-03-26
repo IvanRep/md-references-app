@@ -28,6 +28,9 @@ export class LoadSvgDirective implements OnChanges {
 
   parseTextSvg(parser: DOMParser, angularId: any) {
     if (!this.text) return;
+    const container = this.render.createElement('span');
+    this.render.appendChild(this.elementRef.nativeElement, container);
+    container.style.display = 'inline';
     const re = /<svg.*?<\/svg>/gms;
     let match;
     let end = 0;
@@ -38,17 +41,17 @@ export class LoadSvgDirective implements OnChanges {
         'image/svg+xml'
       ).documentElement;
       svg.setAttribute(angularId.name, angularId);
-      svg.style.display = 'inline-text';
+      svg.style.display = 'inline';
 
       const prevTextNode = this.render.createText(
         this.text.substring(end, match.index)
       );
-      this.render.appendChild(this.elementRef.nativeElement, prevTextNode);
-      this.render.appendChild(this.elementRef.nativeElement, svg);
+      this.render.appendChild(container, prevTextNode);
+      this.render.appendChild(container, svg);
       end = match.index + match[0].length;
     }
     const endText = this.render.createText(this.text.substring(end));
-    this.render.appendChild(this.elementRef.nativeElement, endText);
+    this.render.appendChild(container, endText);
   }
 
   parseIconSvg(parser: DOMParser, angularId: any) {

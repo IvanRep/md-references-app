@@ -6,12 +6,16 @@ section {
   justify-content: center;
   font-weight: bold;
   font-size: 1.5rem;
+  text-wrap: pretty;
+  padding: .5rem;
 }
 
 svg {
+  display: inline;
   width: 2.5rem;
   height: 2.5rem;
-  margin-left: .75rem;
+  margin-left: .2rem;
+  margin-block: -.55rem;
 
   border-radius: .5rem;
   padding: .5rem;
