@@ -1,14 +1,14 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { Reference } from '@/app/types/Reference';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-
+import { TypedError } from '../error/TypedError';
 const referenceList: Reference[] = [];
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'platform',
 })
 export class MarkdownService {
-  private referenceSubject = new BehaviorSubject<Reference[]>(referenceList);
+  private referenceSubject = new Subject<Reference[]>();
   referenceList$: Observable<Reference[]> =
     this.referenceSubject.asObservable();
 

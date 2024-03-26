@@ -4,9 +4,7 @@ import { Component } from '@angular/core';
   selector: 'app-code',
   standalone: true,
   imports: [],
-  templateUrl: './code.component.html',
-  styleUrl: './code.component.css'
+  templateUrl: './code.component.svg',
+  styleUrl: './code.component.css',
 })
-export class CodeComponent {
-
-}
+export class CodeComponent {}

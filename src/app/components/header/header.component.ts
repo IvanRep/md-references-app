@@ -1,10 +1,12 @@
 import { CodeComponent } from '@/app/icons/code/code.component';
 import { FolderComponent } from '@/app/icons/folder/folder.component';
 import { SearchComponent } from '@/app/icons/search/search.component';
-import { Component, ErrorHandler, HostListener } from '@angular/core';
+import { Component, ErrorHandler, HostListener, OnInit } from '@angular/core';
 import { SearchBarComponent } from '../search-bar/search-bar.component';
 import { MarkdownService } from '@/app/services/markdown.service';
 import { TypedError } from '@/app/error/TypedError';
+import { Reference } from '@/app/types/Reference';
+import { throwError } from 'rxjs';
 
 @Component({
   selector: 'app-header',

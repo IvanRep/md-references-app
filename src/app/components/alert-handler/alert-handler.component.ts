@@ -1,4 +1,5 @@
 import { Message } from '@/app/types/Message';
+import { CodeComponent } from '@/app/icons/code/code.component';
 import {
   Component,
   ElementRef,
@@ -7,11 +8,12 @@ import {
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
+import { LoadSvgDirective } from '@/app/directives/loadSvg.directive';
 
 @Component({
   selector: 'app-alert-handler',
   standalone: true,
-  imports: [],
+  imports: [LoadSvgDirective],
   templateUrl: './alert-handler.component.html',
   styleUrl: './alert-handler.component.css',
 })
