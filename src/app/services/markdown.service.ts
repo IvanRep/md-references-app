@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Reference } from '@/app/types/Reference';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 
 const referenceList: Reference[] = [];
 
@@ -8,12 +8,18 @@ const referenceList: Reference[] = [];
   providedIn: 'root',
 })
 export class MarkdownService {
-  private subject = new BehaviorSubject<Reference[]>(referenceList);
-  referenceList$: Observable<Reference[]> = this.subject.asObservable();
+  private referenceSubject = new BehaviorSubject<Reference[]>(referenceList);
+  referenceList$: Observable<Reference[]> =
+    this.referenceSubject.asObservable();
+
+  private markdownFileSubject = new Subject<File>();
+  markdownFile: Observable<File | undefined> =
+    this.markdownFileSubject.asObservable();
 
   constructor() {}
 
   setMarkdown(file: File): void {
+    this.markdownFileSubject.next(file);
     file.text().then((text) => {
       this.parse(text);
     });
@@ -55,6 +61,6 @@ export class MarkdownService {
         isTable = true;
       }
     }
-    this.subject.next(referenceList);
+    this.referenceSubject.next(referenceList);
   }
 }
