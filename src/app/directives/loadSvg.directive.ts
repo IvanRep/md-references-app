@@ -13,7 +13,7 @@ import {
   standalone: true,
 })
 export class LoadSvgDirective implements OnChanges {
-  @Input() icon!: string;
+  @Input() icon!: string | undefined;
   @Input() text: string | undefined;
   constructor(private elementRef: ElementRef, private render: Renderer2) {}
 
