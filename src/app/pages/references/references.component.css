@@ -7,13 +7,6 @@
   min-height: 100svh;
 }
 
-app-user-login {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-}
-
 app-header {
   width: 100%;
   max-width: 800px;

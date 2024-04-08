@@ -1,0 +1,91 @@
+:host {
+  outline: solid 1px black;
+  display: flex;
+  width: 100%;
+  min-height: 30rem;
+  z-index: 0;
+  justify-content: center;
+}
+
+@font-face {
+  font-family: 'monaspace-neon';
+  font-stretch: 100%;
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('/assets/fonts/MonaspaceNeonVarVF.ttf');
+}
+
+@font-face {
+  font-family: 'fira-code';
+  font-stretch: 100%;
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('/assets/fonts/FiraCode-VariableFont_wght.ttf');
+}
+
+textarea {
+  resize: none;
+  width: 40%;
+  white-space: pre;
+}
+
+.visible-text {
+  font-family: 'fira-code';
+  width: 40%;
+  outline: solid 1px black;
+  letter-spacing: 1px;
+  padding: .25rem;
+}
+
+span {
+  position: relative;
+  white-space: pre-wrap;
+}
+
+.row {
+  width: 100%;
+  min-height: 1rem;
+}
+
+.selected:after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  min-width: 1rem;
+  min-height: 1rem;
+  width: 100%;
+  height: 90%;
+  top: 0;
+  left: 0;
+  animation: cursor 1s linear infinite;
+
+}
+
+.highlighted {
+  padding-block: .15rem;
+  background-color: #1d69b7;
+  color: white;
+}
+
+
+/* .hidden-text {
+  position: absolute;
+  top: 0;
+  transform: translateY(-100%);
+  opacity: 0;
+  width: 0;
+  height: 0;
+  padding: 0;
+} */
+
+
+@keyframes cursor {
+  from {
+    border-left: none;
+  }
+  to {
+    border-left: 1px solid black;
+  }
+}

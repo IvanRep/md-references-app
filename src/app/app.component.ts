@@ -8,11 +8,12 @@ import { MessagesDisplayService } from './services/messages-display.service';
 import { Message } from '@/app/types/Message';
 import { MarkdownService } from './services/markdown.service';
 import { Reference } from './types/Reference';
+import { UserLoginComponent } from './components/user-login/user-login.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, AlertHandlerComponent, AsyncPipe],
+  imports: [RouterOutlet, UserLoginComponent, AlertHandlerComponent, AsyncPipe],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   providers: [{ provide: ErrorHandler, useClass: GlobalErrorHandler }],
