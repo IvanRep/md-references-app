@@ -20,24 +20,12 @@ export class EditorComponent implements AfterViewInit {
   constructor(private elementRef: ElementRef) {}
 
   @ViewChild('editor') editor!: ElementRef;
-  selectedTextIndex: number[] = [0, 0];
+  text: string = '';
+  selectedTextIndex: number[] = [-1, -1];
+  TAB_SIZE = 4;
+  END_OF_LINE_CHAR = '\n';
 
-  ngAfterViewInit(): void {
-    // ace.config.setModuleUrl('ace/theme/chaos', chaosTheme.url);
-    // ace.config.setModuleUrl('ace/mode/markdown', markdownMode.url);
-    // const aceEditor = ace.edit(this.elementRef.nativeElement);
-    // aceEditor.setTheme('ace/theme/chaos');
-    // aceEditor.session.setMode('ace/mode/markdown');
-    // aceEditor.on('change', () => {
-    //   console.log(aceEditor.getValue());
-    // });
-    // const hiddenEditor = this.elementRef.nativeElement.querySelector(
-    //   'textarea.hidden-text'
-    // ) as HTMLTextAreaElement;
-    // hiddenEditor.addEventListener('keydown', this.removeHighlight.bind(this), {
-    //   capture: true,
-    // });
-  }
+  ngAfterViewInit(): void {}
 
   focusEditor() {
     const visibleEditor = this.elementRef.nativeElement.querySelector(
@@ -67,59 +55,119 @@ export class EditorComponent implements AfterViewInit {
     hiddenEditor.focus();
     hiddenEditor.setSelectionRange(lesserNumber, greaterNumber, direction);
 
-    if (visibleEditor.textContent === '') {
+    if (visibleEditor.childElementCount === 0) {
       this.writeText({ target: hiddenEditor });
     }
   }
 
-  writeText(event: any) {
+  writeText(event: InputEvent | any) {
     const hiddenEditor = event.target as HTMLTextAreaElement;
     const visibleEditor = this.elementRef.nativeElement.querySelector(
       'div.visible-text'
     ) as HTMLDivElement;
-    // visibleEditor.value = hiddenEditor.value;
-
-    visibleEditor.innerHTML = '';
     const angularId = visibleEditor.attributes[0];
-    let row = this.createEditorRow(visibleEditor, angularId);
-    for (let i = 0; i < hiddenEditor.value.length; i++) {
-      const letter = hiddenEditor.value.charAt(i);
-      if (letter === '\n') {
-        const lastLetterSlot = i;
-        const span = this.createEditorLetter(
-          row,
-          angularId,
-          '',
-          lastLetterSlot.toString()
-        );
-        row.slot = lastLetterSlot.toString();
-        row = this.createEditorRow(visibleEditor, angularId);
-        continue;
-      }
-      let letterSelected;
-      if (hiddenEditor.selectionEnd === i) letterSelected = true;
-      const slot = i.toString();
-      const span = this.createEditorLetter(
-        row,
-        angularId,
-        letter,
-        slot,
-        letterSelected
-      );
+    console.log(visibleEditor.textContent);
+    //remove
+    if (
+      visibleEditor.textContent !== '' &&
+      event.inputType === 'deleteContentBackward'
+    ) {
+      if (this.selectedTextIndex[0] !== this.selectedTextIndex[1])
+        this.deleteLetters(visibleEditor);
+      else this.deleteOneLetter(visibleEditor);
     }
-    row.slot = hiddenEditor.value.length.toString();
+    //new row
+    let row;
+    if (
+      visibleEditor.childElementCount === 0 ||
+      event.inputType === 'insertLineBreak' ||
+      hiddenEditor.value[this.selectedTextIndex[1]] === '\n'
+    ) {
+      console.log(hiddenEditor.value);
+      console.log(event.inputType);
+      row = this.createEditorRow(visibleEditor, angularId);
+      row.appendChild(
+        this.createEditorLetter(angularId, this.END_OF_LINE_CHAR, '0', true)
+      );
+      this.selectedTextIndex[1]++;
+      this.selectedTextIndex[0] = this.selectedTextIndex[1];
+    }
+    //write
+    if (!event.data) return;
 
-    const span = this.createEditorLetter(
-      row,
-      angularId,
-      '',
-      hiddenEditor.value.length.toString(),
-      true
-    );
+    const cursorPosition =
+      visibleEditor.querySelectorAll('span')[this.selectedTextIndex[1]];
+    for (let i = 0; i < event.data.length; i++) {
+      const newLetter = this.createEditorLetter(
+        angularId,
+        event.data[i],
+        this.selectedTextIndex[1].toString()
+      );
+      cursorPosition.insertAdjacentElement('beforebegin', newLetter);
+      this.selectedTextIndex[1]++;
+      this.selectedTextIndex[0] = this.selectedTextIndex[1];
+      console.log('-> ' + this.selectedTextIndex);
+    }
+  }
+
+  private deleteLetters(visibleEditor: HTMLDivElement) {
+    const selectedLetters = visibleEditor.querySelectorAll('span');
+    let minIndex, maxIndex, letter;
+    this.selectedTextIndex[0] < this.selectedTextIndex[1]
+      ? ([minIndex, maxIndex] = [
+          this.selectedTextIndex[0],
+          this.selectedTextIndex[1],
+        ])
+      : ([minIndex, maxIndex] = [
+          this.selectedTextIndex[1],
+          this.selectedTextIndex[0],
+        ]);
+
+    for (let i = maxIndex; i >= minIndex; i--) {
+      let lineEndIndex = i;
+      while (
+        selectedLetters[lineEndIndex].textContent === this.END_OF_LINE_CHAR
+      ) {
+        if (!selectedLetters[lineEndIndex].previousSibling) {
+          break;
+        }
+        lineEndIndex = lineEndIndex - 1;
+      }
+      letter = selectedLetters[lineEndIndex];
+      if (
+        letter.parentElement &&
+        letter.parentElement.childElementCount === 2
+      ) {
+        letter.parentElement.remove();
+      } else {
+        letter.remove();
+      }
+    }
+    this.selectedTextIndex[1] = minIndex;
+    this.selectedTextIndex[0] = this.selectedTextIndex[1];
+    visibleEditor
+      .querySelectorAll('span')
+      [this.selectedTextIndex[1]].classList.add('selected');
+  }
+
+  private deleteOneLetter(visibleEditor: HTMLDivElement) {
+    let selectedLetter =
+      visibleEditor.querySelectorAll('span')[this.selectedTextIndex[1] - 1];
+    if (selectedLetter.textContent === this.END_OF_LINE_CHAR) {
+      selectedLetter = selectedLetter.parentElement
+        ?.nextSibling as HTMLDivElement;
+    }
+
+    selectedLetter.remove();
+
+    this.selectedTextIndex[1]--;
+    this.selectedTextIndex[0] = this.selectedTextIndex[1];
+    visibleEditor
+      .querySelectorAll('span')
+      [this.selectedTextIndex[1]].classList.add('selected');
   }
 
   createEditorLetter(
-    row: HTMLDivElement,
     angularId: Attr,
     letter: string,
     slot: string,
@@ -127,12 +175,14 @@ export class EditorComponent implements AfterViewInit {
   ) {
     const span = document.createElement('span');
     span.setAttribute(angularId.name, angularId.value);
-    if (selected) span.classList.add('selected');
+    if (selected) {
+      document.querySelector('.selected')?.classList.remove('selected');
+      span.classList.add('selected');
+    }
     span.textContent = letter;
     span.slot = slot;
     span.addEventListener('mousedown', this.getStartTextSelection.bind(this));
     span.addEventListener('mouseup', this.getEndTextSelection.bind(this));
-    row.appendChild(span);
     return span;
   }
 
@@ -149,12 +199,13 @@ export class EditorComponent implements AfterViewInit {
   addHighlight() {
     this.elementRef.nativeElement
       .querySelectorAll('span')
-      .forEach((span: HTMLSpanElement) => {
+      .forEach((span: HTMLSpanElement, index: number) => {
+        if (span.textContent === this.END_OF_LINE_CHAR) return;
         if (
-          (parseInt(span.slot) >= this.selectedTextIndex[0] &&
-            parseInt(span.slot) <= this.selectedTextIndex[1]) ||
-          (parseInt(span.slot) >= this.selectedTextIndex[1] &&
-            parseInt(span.slot) <= this.selectedTextIndex[0])
+          (index >= this.selectedTextIndex[0] &&
+            index <= this.selectedTextIndex[1]) ||
+          (index >= this.selectedTextIndex[1] &&
+            index <= this.selectedTextIndex[0])
         ) {
           span.classList.add('highlighted');
         }
@@ -211,33 +262,58 @@ export class EditorComponent implements AfterViewInit {
   @HostListener('document:mousedown', ['$event']) onClick(
     event: KeyboardEvent
   ) {
-    console.log(event);
     this.removeHighlight();
   }
 
-  @HostListener('document:keydown', ['$event']) onKeydown(
-    event: KeyboardEvent
-  ) {
-    this.removeHighlight();
+  @HostListener('keydown', ['$event']) onKeydown(event: KeyboardEvent) {
+    console.log(event.key);
     if (
       event.key === 'ArrowUp' ||
       event.key === 'ArrowDown' ||
       event.key === 'ArrowLeft' ||
-      event.key === 'ArrowRight'
+      event.key === 'ArrowRight' ||
+      event.key === 'End' ||
+      event.key === 'Home' ||
+      event.key === 'PageDown' ||
+      event.key === 'PageUp'
     ) {
       setTimeout(() => {
         const selectionEnd = (this.editor.nativeElement as HTMLTextAreaElement)
           .selectionEnd;
-
-        this.selectedTextIndex[0] = selectionEnd;
         this.selectedTextIndex[1] = selectionEnd;
 
         document.querySelector('.selected')?.classList.remove('selected');
-        const span = document.querySelector(
-          `span[slot="${this.selectedTextIndex[0]}"]`
-        );
+        const span =
+          document.querySelectorAll(`span`)[this.selectedTextIndex[1]];
         span?.classList.add('selected');
+        this.addHighlight();
+        if (!event.shiftKey) {
+          this.selectedTextIndex[0] = selectionEnd;
+          this.removeHighlight();
+        }
       });
+      return;
     }
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      event.stopPropagation();
+      const hiddenEditor = this.elementRef.nativeElement.querySelector(
+        'textarea.hidden-text'
+      ) as HTMLTextAreaElement;
+      const text = hiddenEditor.value.substring(0, this.selectedTextIndex[0]);
+      const text2 = hiddenEditor.value.substring(this.selectedTextIndex[0]);
+      hiddenEditor.value = text + ' '.repeat(this.TAB_SIZE) + text2;
+      console.log(this.selectedTextIndex);
+      this.writeText({
+        target: hiddenEditor,
+        inputType: 'insertText',
+        data: ' '.repeat(this.TAB_SIZE),
+      });
+      hiddenEditor.setSelectionRange(
+        this.selectedTextIndex[0],
+        this.selectedTextIndex[0]
+      );
+    }
+    this.removeHighlight();
   }
 }

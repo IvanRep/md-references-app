@@ -83,9 +83,9 @@ span {
 
 @keyframes cursor {
   from {
-    border-left: none;
+    border-left: 1px solid black;
   }
   to {
-    border-left: 1px solid black;
+    border-left: none;
   }
 }
