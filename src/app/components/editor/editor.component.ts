@@ -409,6 +409,9 @@ export class EditorComponent implements AfterViewInit {
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
       this.cursorPosition.endPosition[1]
     ];
+    this.visibleEditor.nativeElement
+      .querySelector('.selected')
+      .classList.remove('selected');
     cursorPositionSpan?.classList.add('selected');
   }
 
