@@ -262,6 +262,7 @@ export class EditorComponent implements AfterViewInit {
   }
 
   addHighlight() {
+    console.log(this.cursorPosition);
     let minIndex, maxIndex;
     this.cursorPosition.startPosition[0] < this.cursorPosition.endPosition[0]
       ? ([minIndex, maxIndex] = [
@@ -276,6 +277,7 @@ export class EditorComponent implements AfterViewInit {
       .querySelectorAll('.row')
       .forEach((row: HTMLDivElement, rowIndex: number) => {
         if (rowIndex > minIndex[0] && rowIndex < maxIndex[0]) {
+          console.log('highlighted -> ', row);
           row.classList.add('highlighted');
           return;
         }
@@ -285,6 +287,7 @@ export class EditorComponent implements AfterViewInit {
               (spanIndex >= minIndex[1] && spanIndex <= maxIndex[1]) ||
               (spanIndex <= minIndex[1] && spanIndex >= maxIndex[1])
             ) {
+              console.log('highlighted s -> ', span);
               (span as HTMLSpanElement).classList.add('highlighted');
             }
           });
@@ -293,6 +296,7 @@ export class EditorComponent implements AfterViewInit {
         if (rowIndex === minIndex[0]) {
           row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
             if (spanIndex >= minIndex[1]) {
+              console.log('highlighted s -> ', span);
               (span as HTMLSpanElement).classList.add('highlighted');
             }
           });
@@ -300,6 +304,7 @@ export class EditorComponent implements AfterViewInit {
         if (rowIndex === maxIndex[0]) {
           row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
             if (spanIndex <= minIndex[1]) {
+              console.log('highlighted s -> ', span);
               (span as HTMLSpanElement).classList.add('highlighted');
             }
           });
@@ -317,11 +322,13 @@ export class EditorComponent implements AfterViewInit {
 
   getStartTextSelection(event: MouseEvent) {
     if (event.button !== 0) return;
+    event.stopPropagation();
 
     const span = event.target as HTMLSpanElement;
     this.cursorPosition.startPosition[1] = parseInt(
       span.getAttribute('position') as string
     );
+    console.log(span.getAttribute('position'));
     this.cursorPosition.startPosition[0] = parseInt(
       span.parentElement?.getAttribute('position') as string
     );
@@ -349,9 +356,7 @@ export class EditorComponent implements AfterViewInit {
     this.cursorPosition.startPosition[0] = parseInt(
       row.getAttribute('position') as string
     );
-    this.cursorPosition.startPosition[1] = parseInt(
-      row.lastElementChild?.getAttribute('position') as string
-    );
+    this.cursorPosition.startPosition[1] = row.childElementCount - 1;
   }
 
   getEndRowSelection(event: MouseEvent) {
@@ -363,9 +368,7 @@ export class EditorComponent implements AfterViewInit {
     this.cursorPosition.endPosition[0] = parseInt(
       row.getAttribute('position') as string
     );
-    this.cursorPosition.endPosition[1] = parseInt(
-      span.getAttribute('position') as string
-    );
+    this.cursorPosition.endPosition[1] = row.childElementCount - 1;
   }
 
   moveCursor(move: string) {
@@ -425,6 +428,7 @@ export class EditorComponent implements AfterViewInit {
   @HostListener('document:keydown', ['$event']) onKeydown(
     event: KeyboardEvent
   ) {
+    this.removeHighlight();
     if (!this.isFocused) return;
     if (
       event.key === 'ArrowUp' ||
@@ -448,7 +452,6 @@ export class EditorComponent implements AfterViewInit {
       });
       return;
     }
-    this.removeHighlight();
     this.writeText(event);
   }
 }
