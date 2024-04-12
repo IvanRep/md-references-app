@@ -369,7 +369,7 @@ export class EditorComponent implements AfterViewInit {
   }
 
   moveCursor(move: string) {
-    const cursorPositionRow = this.elementRef.nativeElement.querySelector(
+    const cursorPositionRow = this.elementRef.nativeElement.querySelectorAll(
       '.row'
     )[this.cursorPosition.endPosition[0]] as HTMLDivElement;
     switch (move) {
