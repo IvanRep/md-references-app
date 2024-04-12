@@ -29,7 +29,7 @@ export class EditorComponent implements AfterViewInit {
   }; //[row, column];
   isFocused = false;
   TAB_SIZE = 4;
-  END_OF_LINE_CHAR = '\n';
+  END_OF_LINE_CHAR = '-';
 
   ngAfterViewInit(): void {}
 
@@ -205,19 +205,35 @@ export class EditorComponent implements AfterViewInit {
   }
 
   private deleteOneLetter(visibleEditor: HTMLDivElement) {
+    const letterPosition =
+      this.cursorPosition.endPosition[1] <= 0
+        ? 0
+        : this.cursorPosition.endPosition[1] - 1;
     let selectedLetter = visibleEditor
       .querySelectorAll('.row')
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
-      this.cursorPosition.endPosition[1] - 1
+      letterPosition
     ];
-    if (selectedLetter.textContent === this.END_OF_LINE_CHAR) {
-      if (!selectedLetter.parentElement) return;
+    if (this.cursorPosition.endPosition[1] <= 0) {
+      if (
+        !selectedLetter.parentElement ||
+        !selectedLetter.parentElement.previousElementSibling
+      )
+        return;
+
       this.cursorPosition.endPosition[0]--;
       this.cursorPosition.endPosition[1] =
-        selectedLetter.parentElement.childElementCount - 1;
+        selectedLetter.parentElement.previousElementSibling.childElementCount -
+        1;
 
-      selectedLetter = selectedLetter.parentElement
-        .nextSibling as HTMLDivElement;
+      selectedLetter.parentElement.previousElementSibling?.lastChild?.remove();
+      selectedLetter.parentElement.childNodes.forEach((span: ChildNode) => {
+        selectedLetter.parentElement?.previousElementSibling?.appendChild(
+          (span as HTMLSpanElement).cloneNode(true)
+        );
+      });
+
+      selectedLetter = selectedLetter.parentElement as HTMLDivElement;
     } else {
       this.cursorPosition.endPosition[1]--;
     }
