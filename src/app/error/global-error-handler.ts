@@ -13,6 +13,7 @@ export class GlobalErrorHandler implements ErrorHandler {
   ) {}
 
   handleError(error: TypedError): void {
+    console.error(error);
     this.zone.run(() => {
       this.messagesDisplayService.subject.next({
         message: error.message,
