@@ -108,7 +108,7 @@ export class EditorComponent implements AfterViewInit {
   }
 
   deleteLetters(visibleEditor: HTMLDivElement) {
-    // const selectedLetters = visibleEditor.querySelectorAll('row');
+    // const selectedLetters = visibleEditor.querySelectorAll('.row');
     // let minIndex, maxIndex, letter;
     // // this.cursorPosition[0] < this.cursorPosition[1]
     // //   ? ([minIndex, maxIndex] = [
@@ -157,7 +157,7 @@ export class EditorComponent implements AfterViewInit {
           this.cursorPosition.startPosition,
         ]);
     visibleEditor
-      .querySelectorAll('row')
+      .querySelectorAll('.row')
       .forEach((row: Element, rowIndex: number) => {
         if (rowIndex > minRowIndex[0] && rowIndex < maxRowIndex[0]) {
           row.remove();
@@ -199,14 +199,14 @@ export class EditorComponent implements AfterViewInit {
     this.cursorPosition.endPosition[1] = minRowIndex[1];
     this.cursorPosition.startPosition = this.cursorPosition.endPosition.slice();
     visibleEditor
-      .querySelectorAll('row')
+      .querySelectorAll('.row')
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')
       [this.cursorPosition.endPosition[1]].classList.add('selected');
   }
 
   private deleteOneLetter(visibleEditor: HTMLDivElement) {
     let selectedLetter = visibleEditor
-      .querySelectorAll('row')
+      .querySelectorAll('.row')
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
       this.cursorPosition.endPosition[1] - 1
     ];
@@ -226,7 +226,7 @@ export class EditorComponent implements AfterViewInit {
 
     this.cursorPosition.startPosition = this.cursorPosition.endPosition.slice();
     visibleEditor
-      .querySelectorAll('row')
+      .querySelectorAll('.row')
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')
       [this.cursorPosition.endPosition[1]].classList.add('selected');
   }
@@ -273,7 +273,7 @@ export class EditorComponent implements AfterViewInit {
           this.cursorPosition.startPosition,
         ]);
     this.visibleEditor.nativeElement
-      .querySelectorAll('row')
+      .querySelectorAll('.row')
       .forEach((row: HTMLDivElement, rowIndex: number) => {
         if (rowIndex > minIndex[0] && rowIndex < maxIndex[0]) {
           row.classList.add('highlighted');
