@@ -22,14 +22,16 @@ export class EditorComponent implements AfterViewInit {
 
   @ViewChild('visibleEditor') visibleEditor!: ElementRef;
   @ViewChild('editor') editor!: ElementRef;
+  TAB_SIZE: number = 4;
+  END_OF_LINE_CHAR: string = '-';
   text: string = '';
   cursorPosition: CursorPosition = {
     startPosition: [-1, -1],
     endPosition: [-1, -1],
   }; //[row, column];
-  isFocused = false;
-  TAB_SIZE = 4;
-  END_OF_LINE_CHAR = '-';
+  isFocused: boolean = false;
+  isSelectionActive: boolean = false;
+  selectedLetters: HTMLSpanElement[] = [];
 
   ngAfterViewInit(): void {}
 
@@ -53,7 +55,7 @@ export class EditorComponent implements AfterViewInit {
       if (visibleEditor.textContent === this.END_OF_LINE_CHAR) return;
       if (
         this.cursorPosition.startPosition[0] !==
-          this.cursorPosition.endPosition[0] &&
+          this.cursorPosition.endPosition[0] ||
         this.cursorPosition.startPosition[1] !==
           this.cursorPosition.endPosition[1]
       )
@@ -108,6 +110,7 @@ export class EditorComponent implements AfterViewInit {
   }
 
   deleteLetters(visibleEditor: HTMLDivElement) {
+    console.log(this.cursorPosition);
     // const selectedLetters = visibleEditor.querySelectorAll('.row');
     // let minIndex, maxIndex, letter;
     // // this.cursorPosition[0] < this.cursorPosition[1]
@@ -149,59 +152,67 @@ export class EditorComponent implements AfterViewInit {
     let minRowIndex, maxRowIndex;
     this.cursorPosition.startPosition[0] < this.cursorPosition.endPosition[0]
       ? ([minRowIndex, maxRowIndex] = [
-          this.cursorPosition.startPosition,
-          this.cursorPosition.endPosition,
+          this.cursorPosition.startPosition.slice(),
+          this.cursorPosition.endPosition.slice(),
         ])
       : ([minRowIndex, maxRowIndex] = [
-          this.cursorPosition.endPosition,
-          this.cursorPosition.startPosition,
+          this.cursorPosition.endPosition.slice(),
+          this.cursorPosition.startPosition.slice(),
         ]);
-    visibleEditor
-      .querySelectorAll('.row')
-      .forEach((row: Element, rowIndex: number) => {
-        if (rowIndex > minRowIndex[0] && rowIndex < maxRowIndex[0]) {
-          row.remove();
-          return;
-        }
+    this.cursorPosition.endPosition = maxRowIndex;
 
-        if (minRowIndex[0] === maxRowIndex[0] && rowIndex === minRowIndex[0]) {
-          row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
-            if (span.textContent === this.END_OF_LINE_CHAR) return;
-            if (
-              (spanIndex >= minRowIndex[1] && spanIndex <= maxRowIndex[1]) ||
-              (spanIndex <= minRowIndex[1] && spanIndex >= maxRowIndex[1])
-            ) {
-              (span as HTMLSpanElement).remove();
-            }
-          });
-          return;
-        }
-        if (rowIndex === minRowIndex[0]) {
-          row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
-            if (span.textContent === this.END_OF_LINE_CHAR) return;
-            if (spanIndex >= minRowIndex[1]) {
-              (span as HTMLSpanElement).remove();
-            }
-          });
-          return;
-        }
-        if (rowIndex === maxRowIndex[0]) {
-          row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
-            if (span.textContent === this.END_OF_LINE_CHAR) return;
-            if (spanIndex <= minRowIndex[1]) {
-              (span as HTMLSpanElement).remove();
-            }
-          });
-          return;
-        }
-      });
-    this.cursorPosition.endPosition[0] = minRowIndex[0];
-    this.cursorPosition.endPosition[1] = minRowIndex[1];
-    this.cursorPosition.startPosition = this.cursorPosition.endPosition.slice();
-    visibleEditor
-      .querySelectorAll('.row')
-      [this.cursorPosition.endPosition[0]].querySelectorAll('span')
-      [this.cursorPosition.endPosition[1]].classList.add('selected');
+    while (
+      this.cursorPosition.endPosition[0] !== minRowIndex[0] &&
+      this.cursorPosition.endPosition[1] !== minRowIndex[1]
+    ) {
+      this.deleteOneLetter(visibleEditor);
+    }
+    // visibleEditor
+    //   .querySelectorAll('.row')
+    //   .forEach((row: Element, rowIndex: number) => {
+    //     if (rowIndex > minRowIndex[0] && rowIndex < maxRowIndex[0]) {
+    //       row.remove();
+    //       return;
+    //     }
+
+    //     if (minRowIndex[0] === maxRowIndex[0] && rowIndex === minRowIndex[0]) {
+    //       row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
+    //         if (span.textContent === this.END_OF_LINE_CHAR) return;
+    //         if (
+    //           (spanIndex >= minRowIndex[1] && spanIndex <= maxRowIndex[1]) ||
+    //           (spanIndex <= minRowIndex[1] && spanIndex >= maxRowIndex[1])
+    //         ) {
+    //           (span as HTMLSpanElement).remove();
+    //         }
+    //       });
+    //       return;
+    //     }
+    //     if (rowIndex === minRowIndex[0]) {
+    //       row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
+    //         if (span.textContent === this.END_OF_LINE_CHAR) return;
+    //         if (spanIndex >= minRowIndex[1]) {
+    //           (span as HTMLSpanElement).remove();
+    //         }
+    //       });
+    //       return;
+    //     }
+    //     if (rowIndex === maxRowIndex[0]) {
+    //       row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
+    //         if (span.textContent === this.END_OF_LINE_CHAR) return;
+    //         if (spanIndex <= minRowIndex[1]) {
+    //           (span as HTMLSpanElement).remove();
+    //         }
+    //       });
+    //       return;
+    //     }
+    //   });
+    // this.cursorPosition.endPosition[0] = minRowIndex[0];
+    // this.cursorPosition.endPosition[1] = minRowIndex[1];
+    // this.cursorPosition.startPosition = this.cursorPosition.endPosition.slice();
+    // visibleEditor
+    //   .querySelectorAll('.row')
+    //   [this.cursorPosition.endPosition[0]].querySelectorAll('span')
+    //   [this.cursorPosition.endPosition[1]].classList.add('selected');
   }
 
   private deleteOneLetter(visibleEditor: HTMLDivElement) {
@@ -256,13 +267,15 @@ export class EditorComponent implements AfterViewInit {
     const span = document.createElement('span');
     span.setAttribute(angularId.name, angularId.value);
     span.setAttribute('position', position.toString());
+    span.setAttribute('data-text', letter);
+    span.textContent = letter;
     if (selected) {
       document.querySelector('.selected')?.classList.remove('selected');
       span.classList.add('selected');
     }
-    span.textContent = letter;
     span.addEventListener('mousedown', this.getStartTextSelection.bind(this));
     span.addEventListener('mouseup', this.getEndTextSelection.bind(this));
+    span.addEventListener('mouseover', this.overSelection.bind(this));
     return span;
   }
 
@@ -293,7 +306,6 @@ export class EditorComponent implements AfterViewInit {
       .querySelectorAll('.row')
       .forEach((row: HTMLDivElement, rowIndex: number) => {
         if (rowIndex > minIndex[0] && rowIndex < maxIndex[0]) {
-          console.log('highlighted -> ', row);
           row.classList.add('highlighted');
           return;
         }
@@ -303,7 +315,6 @@ export class EditorComponent implements AfterViewInit {
               (spanIndex >= minIndex[1] && spanIndex <= maxIndex[1]) ||
               (spanIndex <= minIndex[1] && spanIndex >= maxIndex[1])
             ) {
-              console.log('highlighted s -> ', span);
               (span as HTMLSpanElement).classList.add('highlighted');
             }
           });
@@ -312,7 +323,6 @@ export class EditorComponent implements AfterViewInit {
         if (rowIndex === minIndex[0]) {
           row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
             if (spanIndex >= minIndex[1]) {
-              console.log('highlighted s -> ', span);
               (span as HTMLSpanElement).classList.add('highlighted');
             }
           });
@@ -320,7 +330,6 @@ export class EditorComponent implements AfterViewInit {
         if (rowIndex === maxIndex[0]) {
           row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
             if (spanIndex <= minIndex[1]) {
-              console.log('highlighted s -> ', span);
               (span as HTMLSpanElement).classList.add('highlighted');
             }
           });
@@ -337,10 +346,15 @@ export class EditorComponent implements AfterViewInit {
   }
 
   getStartTextSelection(event: MouseEvent) {
+    this.removeHighlight();
     if (event.button !== 0) return;
     event.stopPropagation();
+    event.preventDefault();
+    this.isSelectionActive = true;
 
     const span = event.target as HTMLSpanElement;
+    span.classList.add('highlighted');
+    this.selectedLetters.push(span);
     this.cursorPosition.startPosition[1] = parseInt(
       span.getAttribute('position') as string
     );
@@ -350,9 +364,31 @@ export class EditorComponent implements AfterViewInit {
     );
   }
 
+  overSelection(event: MouseEvent) {
+    if (!this.isSelectionActive) return;
+    const span = event.currentTarget as HTMLSpanElement;
+    if (span.classList.contains('highlighted')) {
+      this.selectedLetters = this.selectedLetters.filter(
+        (letter: HTMLSpanElement, index: number) => {
+          if (index > this.selectedLetters.indexOf(span)) {
+            letter.classList.remove('highlighted');
+            return;
+          } else return letter;
+        }
+      );
+    } else {
+      span.classList.add('highlighted');
+      this.selectedLetters.push(span);
+    }
+  }
+
   getEndTextSelection(event: MouseEvent) {
     if (event.button !== 0) return;
+
     event.stopPropagation();
+    event.preventDefault();
+    this.isSelectionActive = false;
+
     const span = event.target as HTMLSpanElement;
     document.querySelector('.selected')?.classList.remove('selected');
     span.classList.add('selected');
@@ -362,7 +398,11 @@ export class EditorComponent implements AfterViewInit {
     this.cursorPosition.endPosition[0] = parseInt(
       span.parentElement?.getAttribute('position') as string
     );
-
+    if (span.isSameNode(this.selectedLetters[0])) {
+      this.removeHighlight();
+      return;
+    }
+    this.selectedLetters = [];
     this.addHighlight();
   }
 

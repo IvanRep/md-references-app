@@ -47,6 +47,20 @@ span {
 .row {
   width: 100%;
   min-height: 1rem;
+  counter-increment: row_counter;
+  position: relative;
+}
+
+.row:before {
+  display: inline-block;
+  text-align: right;
+  pointer-events: none;
+  content: counter(row_counter, decimal);
+  width: 3rem;
+  max-width: 3rem;
+  padding-right: 1rem;
+  color: lightgray;
+
 }
 
 .selected:after {
@@ -62,11 +76,27 @@ span {
   animation: cursor 1s linear infinite;
 
 }
-
-.highlighted {
-  padding-block: .15rem;
-  background-color: #1d69b7;
+.highlighted:before {
+  content: attr(data-text);
+  pointer-events: none;
+  position: absolute;
+  min-height: 1rem;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
   color: white;
+  background-color: #1d6ab7;
+}
+
+.highlighted:nth-last-child(1 of .highlighted):before {
+  border-top-right-radius: .25rem;
+  border-bottom-right-radius: .25rem;
+}
+
+.highlighted:nth-child(1 of .highlighted):before {
+  border-top-left-radius: .25rem;
+  border-bottom-left-radius: .25rem;
 }
 
 
