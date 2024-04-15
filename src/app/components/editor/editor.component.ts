@@ -5,9 +5,6 @@ import {
   HostListener,
   ViewChild,
 } from '@angular/core';
-import * as ace from 'ace-builds';
-import chaosTheme from 'ace-builds/src-noconflict/theme-chaos';
-import markdownMode from 'ace-builds/src-noconflict/mode-markdown';
 import { CursorPosition } from '@/app/types/CursorPosition';
 
 @Component({
@@ -21,7 +18,6 @@ export class EditorComponent implements AfterViewInit {
   constructor(private elementRef: ElementRef) {}
 
   @ViewChild('visibleEditor') visibleEditor!: ElementRef;
-  @ViewChild('editor') editor!: ElementRef;
   TAB_SIZE: number = 4;
   END_OF_LINE_CHAR: string = '-';
   text: string = '';
