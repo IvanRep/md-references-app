@@ -508,6 +508,12 @@ export class EditorComponent implements AfterViewInit {
       });
       return;
     }
-    this.writeText(event);
+    if (
+      event.key.match(/^[a-z0-9]$/i) ||
+      event.key === ' ' ||
+      event.key === 'Enter' ||
+      event.key === 'Backspace'
+    )
+      this.writeText(event);
   }
 }

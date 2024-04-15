@@ -37,6 +37,8 @@ textarea {
   outline: solid 1px black;
   letter-spacing: 1px;
   padding: .25rem;
+  overflow: auto;
+  scroll-behavior: smooth;
 }
 
 span {
@@ -45,7 +47,10 @@ span {
 }
 
 .row {
+  display: flex;
+  flex-wrap: nowrap;
   width: 100%;
+  max-height: 1rem;
   min-height: 1rem;
   counter-increment: row_counter;
   position: relative;
