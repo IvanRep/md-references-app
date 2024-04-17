@@ -109,111 +109,41 @@ export class EditorComponent implements AfterViewInit {
 
   deleteLetters(visibleEditor: HTMLDivElement) {
     console.log(this.cursorPosition);
-    // const selectedLetters = visibleEditor.querySelectorAll('.row');
-    // let minIndex, maxIndex, letter;
-    // // this.cursorPosition[0] < this.cursorPosition[1]
-    // //   ? ([minIndex, maxIndex] = [
-    // //       this.cursorPosition[0],
-    // //       this.cursorPosition[1],
-    // //     ])
-    // //   : ([minIndex, maxIndex] = [
-    // //       this.cursorPosition[1],
-    // //       this.cursorPosition[0],
-    // //     ]);
-    // for (let i = maxIndex; i >= minIndex; i--) {
-    //   let lineEndIndex = i;
-    //   while (
-    //     selectedLetters[lineEndIndex].textContent === this.END_OF_LINE_CHAR
-    //   ) {
-    //     if (!selectedLetters[lineEndIndex].previousSibling) {
-    //       break;
-    //     }
-    //     lineEndIndex = lineEndIndex - 1;
-    //   }
-    //   letter = selectedLetters[lineEndIndex];
-    //   if (
-    //     letter.parentElement &&
-    //     letter.parentElement.childElementCount === 2
-    //   ) {
-    //     letter.parentElement.remove();
-    //   } else {
-    //     letter.remove();
-    //   }
-    // }
-    // this.cursorPosition[1] = minIndex;
-    // this.cursorPosition[0] = this.cursorPosition[1];
-    // visibleEditor
-    //   .querySelectorAll('span')
-    //   [this.cursorPosition[1]].classList.add('selected');
-
-    //test
     let minRowIndex, maxRowIndex;
-    this.cursorPosition.startPosition[0] < this.cursorPosition.endPosition[0]
-      ? ([minRowIndex, maxRowIndex] = [
-          this.cursorPosition.startPosition.slice(),
-          this.cursorPosition.endPosition.slice(),
-        ])
-      : ([minRowIndex, maxRowIndex] = [
-          this.cursorPosition.endPosition.slice(),
-          this.cursorPosition.startPosition.slice(),
-        ]);
-    this.cursorPosition.endPosition = maxRowIndex;
-
-    while (
-      this.cursorPosition.endPosition[0] !== minRowIndex[0] &&
-      this.cursorPosition.endPosition[1] !== minRowIndex[1]
+    if (
+      this.cursorPosition.startPosition[0] ===
+      this.cursorPosition.endPosition[0]
     ) {
-      this.deleteOneLetter(visibleEditor);
+      this.cursorPosition.startPosition[1] < this.cursorPosition.endPosition[1]
+        ? ([minRowIndex, maxRowIndex] = [
+            this.cursorPosition.startPosition.slice(),
+            this.cursorPosition.endPosition.slice(),
+          ])
+        : ([minRowIndex, maxRowIndex] = [
+            this.cursorPosition.endPosition.slice(),
+            this.cursorPosition.startPosition.slice(),
+          ]);
+    } else if (
+      this.cursorPosition.startPosition[0] < this.cursorPosition.endPosition[0]
+    ) {
+      minRowIndex = this.cursorPosition.startPosition.slice();
+      maxRowIndex = this.cursorPosition.endPosition.slice();
+    } else {
+      minRowIndex = this.cursorPosition.endPosition.slice();
+      maxRowIndex = this.cursorPosition.startPosition.slice();
     }
-    // visibleEditor
-    //   .querySelectorAll('.row')
-    //   .forEach((row: Element, rowIndex: number) => {
-    //     if (rowIndex > minRowIndex[0] && rowIndex < maxRowIndex[0]) {
-    //       row.remove();
-    //       return;
-    //     }
+    this.cursorPosition.endPosition = minRowIndex;
 
-    //     if (minRowIndex[0] === maxRowIndex[0] && rowIndex === minRowIndex[0]) {
-    //       row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
-    //         if (span.textContent === this.END_OF_LINE_CHAR) return;
-    //         if (
-    //           (spanIndex >= minRowIndex[1] && spanIndex <= maxRowIndex[1]) ||
-    //           (spanIndex <= minRowIndex[1] && spanIndex >= maxRowIndex[1])
-    //         ) {
-    //           (span as HTMLSpanElement).remove();
-    //         }
-    //       });
-    //       return;
-    //     }
-    //     if (rowIndex === minRowIndex[0]) {
-    //       row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
-    //         if (span.textContent === this.END_OF_LINE_CHAR) return;
-    //         if (spanIndex >= minRowIndex[1]) {
-    //           (span as HTMLSpanElement).remove();
-    //         }
-    //       });
-    //       return;
-    //     }
-    //     if (rowIndex === maxRowIndex[0]) {
-    //       row.childNodes.forEach((span: ChildNode, spanIndex: number) => {
-    //         if (span.textContent === this.END_OF_LINE_CHAR) return;
-    //         if (spanIndex <= minRowIndex[1]) {
-    //           (span as HTMLSpanElement).remove();
-    //         }
-    //       });
-    //       return;
-    //     }
-    //   });
-    // this.cursorPosition.endPosition[0] = minRowIndex[0];
-    // this.cursorPosition.endPosition[1] = minRowIndex[1];
-    // this.cursorPosition.startPosition = this.cursorPosition.endPosition.slice();
-    // visibleEditor
-    //   .querySelectorAll('.row')
-    //   [this.cursorPosition.endPosition[0]].querySelectorAll('span')
-    //   [this.cursorPosition.endPosition[1]].classList.add('selected');
+    for (let i = this.selectedLetters.length - 1; i >= 0; i--) {
+      this.selectedLetters.pop();
+      this.deleteOneLetterForward(visibleEditor);
+    }
+
+    this.cursorPosition.startPosition = this.cursorPosition.endPosition.slice();
   }
 
   private deleteOneLetter(visibleEditor: HTMLDivElement) {
+    const angularId = visibleEditor.attributes[0];
     const letterPosition =
       this.cursorPosition.endPosition[1] <= 0
         ? 0
@@ -236,9 +166,16 @@ export class EditorComponent implements AfterViewInit {
         1;
 
       selectedLetter.parentElement.previousElementSibling?.lastChild?.remove();
-      selectedLetter.parentElement.childNodes.forEach((span: ChildNode) => {
+      selectedLetter.parentElement.childNodes.forEach((child: ChildNode) => {
+        const span = child as HTMLSpanElement;
+        const position = parseInt(span.getAttribute('position') ?? '-1');
+        const newLetter = this.createEditorLetter(
+          angularId,
+          span.textContent ?? '',
+          position
+        );
         selectedLetter.parentElement?.previousElementSibling?.appendChild(
-          (span as HTMLSpanElement).cloneNode(true)
+          newLetter
         );
       });
 
@@ -254,6 +191,7 @@ export class EditorComponent implements AfterViewInit {
   }
 
   private deleteOneLetterForward(visibleEditor: HTMLDivElement) {
+    const angularId = visibleEditor.attributes[0];
     let selectedRow =
       visibleEditor.querySelectorAll('.row')[
         this.cursorPosition.endPosition[0]
@@ -265,8 +203,15 @@ export class EditorComponent implements AfterViewInit {
       if (!selectedLetter.parentElement || !nextRow) return;
 
       selectedLetter.remove();
-      nextRow.childNodes.forEach((span: ChildNode) => {
-        selectedRow.appendChild((span as HTMLSpanElement).cloneNode(true));
+      nextRow.childNodes.forEach((child: ChildNode) => {
+        const span = child as HTMLSpanElement;
+        const position = parseInt(span.getAttribute('position') ?? '-1');
+        const newLetter = this.createEditorLetter(
+          angularId,
+          span.textContent ?? '',
+          position
+        );
+        selectedRow.appendChild(newLetter);
       });
 
       selectedLetter = nextRow as HTMLDivElement;
@@ -447,21 +392,23 @@ export class EditorComponent implements AfterViewInit {
   getStartRowSelection(event: MouseEvent) {
     if (event.button !== 0) return;
     const row = event.target as HTMLDivElement;
-    this.cursorPosition.startPosition[0] = parseInt(
-      row.getAttribute('position') as string
-    );
+    const rowPosition = [
+      ...this.elementRef.nativeElement.querySelectorAll('.row'),
+    ].indexOf(row as HTMLDivElement);
+    this.cursorPosition.startPosition[0] = rowPosition;
     this.cursorPosition.startPosition[1] = row.childElementCount - 1;
   }
 
   getEndRowSelection(event: MouseEvent) {
     if (event.button !== 0) return;
     const row = event.target as HTMLDivElement;
+    const rowPosition = [
+      ...this.elementRef.nativeElement.querySelectorAll('.row'),
+    ].indexOf(row as HTMLDivElement);
     const span = row.lastElementChild as HTMLSpanElement;
     this.removeCursor();
     span.classList.add('selected');
-    this.cursorPosition.endPosition[0] = parseInt(
-      row.getAttribute('position') as string
-    );
+    this.cursorPosition.endPosition[0] = rowPosition;
     this.cursorPosition.endPosition[1] = row.childElementCount - 1;
   }
 
