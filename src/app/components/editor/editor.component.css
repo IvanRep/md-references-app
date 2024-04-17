@@ -39,6 +39,8 @@ textarea {
   padding: .25rem;
   overflow: auto;
   scroll-behavior: smooth;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 span {
@@ -48,12 +50,18 @@ span {
 
 .row {
   display: flex;
+  align-items: center;
   flex-wrap: nowrap;
   width: 100%;
   max-height: 1rem;
   min-height: 1rem;
   counter-increment: row_counter;
   position: relative;
+  cursor: text;
+}
+
+.row:nth-child(2n + 1)  {
+  background-color: #f5f5f5;
 }
 
 .row:before {

@@ -19,7 +19,7 @@ export class EditorComponent implements AfterViewInit {
 
   @ViewChild('visibleEditor') visibleEditor!: ElementRef;
   TAB_SIZE: number = 4;
-  END_OF_LINE_CHAR: string = '-';
+  END_OF_LINE_CHAR: string = '\n';
   text: string = '';
   cursorPosition: CursorPosition = {
     startPosition: [-1, -1],
@@ -39,6 +39,7 @@ export class EditorComponent implements AfterViewInit {
     if (visibleEditor.childElementCount === 0) {
       this.writeText({});
     }
+    this.showCursor();
   }
 
   writeText(event: KeyboardEvent | any) {
@@ -47,7 +48,7 @@ export class EditorComponent implements AfterViewInit {
     ) as HTMLDivElement;
     const angularId = visibleEditor.attributes[0];
     //remove
-    if (event.key === 'Backspace') {
+    if (event.key === 'Backspace' || event.key === 'Delete') {
       if (visibleEditor.textContent === this.END_OF_LINE_CHAR) return;
       if (
         this.cursorPosition.startPosition[0] !==
@@ -56,7 +57,9 @@ export class EditorComponent implements AfterViewInit {
           this.cursorPosition.endPosition[1]
       )
         this.deleteLetters(visibleEditor);
-      else this.deleteOneLetter(visibleEditor);
+      else if (event.key === 'Backspace') this.deleteOneLetter(visibleEditor);
+      else if (event.key === 'Delete')
+        this.deleteOneLetterForward(visibleEditor);
       return;
     }
     //new row
@@ -99,7 +102,6 @@ export class EditorComponent implements AfterViewInit {
       this.cursorPosition.endPosition[1]++;
       this.cursorPosition.startPosition =
         this.cursorPosition.endPosition.slice();
-      console.log('-> ' + this.cursorPosition);
       this.text = visibleEditor.textContent ?? '';
       console.log(this.text);
     }
@@ -248,10 +250,31 @@ export class EditorComponent implements AfterViewInit {
     selectedLetter.remove();
 
     this.cursorPosition.startPosition = this.cursorPosition.endPosition.slice();
-    visibleEditor
-      .querySelectorAll('.row')
-      [this.cursorPosition.endPosition[0]].querySelectorAll('span')
-      [this.cursorPosition.endPosition[1]].classList.add('selected');
+    this.showCursor();
+  }
+
+  private deleteOneLetterForward(visibleEditor: HTMLDivElement) {
+    let selectedRow =
+      visibleEditor.querySelectorAll('.row')[
+        this.cursorPosition.endPosition[0]
+      ];
+    let selectedLetter =
+      selectedRow.querySelectorAll('span')[this.cursorPosition.endPosition[1]];
+    if (selectedLetter.textContent === this.END_OF_LINE_CHAR) {
+      const nextRow = selectedRow.nextElementSibling;
+      if (!selectedLetter.parentElement || !nextRow) return;
+
+      selectedLetter.remove();
+      nextRow.childNodes.forEach((span: ChildNode) => {
+        selectedRow.appendChild((span as HTMLSpanElement).cloneNode(true));
+      });
+
+      selectedLetter = nextRow as HTMLDivElement;
+    }
+
+    selectedLetter.remove();
+
+    this.showCursor();
   }
 
   createEditorLetter(
@@ -265,8 +288,9 @@ export class EditorComponent implements AfterViewInit {
     span.setAttribute('position', position.toString());
     span.setAttribute('data-text', letter);
     span.textContent = letter;
+
     if (selected) {
-      document.querySelector('.selected')?.classList.remove('selected');
+      this.removeCursor();
       span.classList.add('selected');
     }
     span.addEventListener('mousedown', this.getStartTextSelection.bind(this));
@@ -346,18 +370,22 @@ export class EditorComponent implements AfterViewInit {
     if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
+    this.selectedLetters = [];
     this.isSelectionActive = true;
 
     const span = event.target as HTMLSpanElement;
     span.classList.add('highlighted');
     this.selectedLetters.push(span);
-    this.cursorPosition.startPosition[1] = parseInt(
-      span.getAttribute('position') as string
-    );
-    console.log(span.getAttribute('position'));
-    this.cursorPosition.startPosition[0] = parseInt(
-      span.parentElement?.getAttribute('position') as string
-    );
+
+    const rowPosition = [
+      ...this.elementRef.nativeElement.querySelectorAll('.row'),
+    ].indexOf(span.parentElement as HTMLDivElement);
+    const colPosition = [
+      ...span.parentElement!.querySelectorAll('span'),
+    ].indexOf(span);
+
+    this.cursorPosition.startPosition[0] = rowPosition;
+    this.cursorPosition.startPosition[1] = colPosition;
   }
 
   overSelection(event: MouseEvent) {
@@ -373,6 +401,18 @@ export class EditorComponent implements AfterViewInit {
         }
       );
     } else {
+      const editorSpans =
+        this.elementRef.nativeElement.querySelectorAll('span');
+      const spanPosition = [...editorSpans].indexOf(span);
+      const previousSpanPosition = [...editorSpans].indexOf(
+        this.selectedLetters[this.selectedLetters.length - 1]
+      );
+      if (previousSpanPosition + 1 !== spanPosition) {
+        for (let i = previousSpanPosition + 1; i < spanPosition; i++) {
+          editorSpans[i].classList.add('highlighted');
+          this.selectedLetters.push(editorSpans[i] as HTMLSpanElement);
+        }
+      }
       span.classList.add('highlighted');
       this.selectedLetters.push(span);
     }
@@ -386,20 +426,22 @@ export class EditorComponent implements AfterViewInit {
     this.isSelectionActive = false;
 
     const span = event.target as HTMLSpanElement;
-    document.querySelector('.selected')?.classList.remove('selected');
+    this.removeCursor();
     span.classList.add('selected');
-    this.cursorPosition.endPosition[1] = parseInt(
-      span.getAttribute('position') as string
-    );
-    this.cursorPosition.endPosition[0] = parseInt(
-      span.parentElement?.getAttribute('position') as string
-    );
+    const colPosition = [
+      ...span.parentElement!.querySelectorAll('span'),
+    ].indexOf(span);
+    const rowPosition = [
+      ...this.elementRef.nativeElement.querySelectorAll('.row'),
+    ].indexOf(span.parentElement as HTMLDivElement);
+
+    this.cursorPosition.endPosition[0] = rowPosition;
+    this.cursorPosition.endPosition[1] = colPosition;
+
     if (span.isSameNode(this.selectedLetters[0])) {
       this.removeHighlight();
       return;
     }
-    this.selectedLetters = [];
-    this.addHighlight();
   }
 
   getStartRowSelection(event: MouseEvent) {
@@ -415,7 +457,7 @@ export class EditorComponent implements AfterViewInit {
     if (event.button !== 0) return;
     const row = event.target as HTMLDivElement;
     const span = row.lastElementChild as HTMLSpanElement;
-    document.querySelector('.selected')?.classList.remove('selected');
+    this.removeCursor();
     span.classList.add('selected');
     this.cursorPosition.endPosition[0] = parseInt(
       row.getAttribute('position') as string
@@ -457,8 +499,65 @@ export class EditorComponent implements AfterViewInit {
           this.cursorPosition.endPosition.slice();
         break;
       case 'ArrowUp':
+        if (!cursorPositionRow.previousElementSibling) {
+          this.cursorPosition.endPosition[1] = 0;
+        } else {
+          const previousRowLastLetterNumber =
+            cursorPositionRow.previousElementSibling?.childElementCount - 1;
+
+          this.cursorPosition.endPosition[0]--;
+          this.cursorPosition.endPosition[1] =
+            previousRowLastLetterNumber >= this.cursorPosition.endPosition[1]
+              ? this.cursorPosition.endPosition[1]
+              : previousRowLastLetterNumber;
+        }
+        this.cursorPosition.startPosition =
+          this.cursorPosition.endPosition.slice();
+        break;
+      case 'ArrowDown':
+        if (!cursorPositionRow.nextElementSibling) {
+          this.cursorPosition.endPosition[1] =
+            cursorPositionRow.childElementCount - 1;
+        } else {
+          const nextRowLettersCount =
+            cursorPositionRow.nextElementSibling?.childElementCount - 1;
+
+          this.cursorPosition.endPosition[0]++;
+          this.cursorPosition.endPosition[1] =
+            nextRowLettersCount >= this.cursorPosition.endPosition[1]
+              ? this.cursorPosition.endPosition[1]
+              : nextRowLettersCount;
+        }
+        this.cursorPosition.startPosition =
+          this.cursorPosition.endPosition.slice();
+        break;
+      case 'End':
+      case 'PageDown':
+        const lastRow = (this.visibleEditor.nativeElement as HTMLDivElement)
+          .lastElementChild;
+        const lastLetterNumber = lastRow!.childElementCount - 1;
+        console.log(lastLetterNumber);
+        this.cursorPosition.endPosition[0] =
+          this.visibleEditor.nativeElement.childElementCount - 1;
+        this.cursorPosition.endPosition[1] = lastLetterNumber;
+        this.cursorPosition.startPosition =
+          this.cursorPosition.endPosition.slice();
+        break;
+      case 'Home':
+      case 'PageUp':
+        const firstRowNumber = 0;
+        const firstLetterNumber = 0;
+        this.cursorPosition.endPosition[0] = firstRowNumber;
+        this.cursorPosition.endPosition[1] = firstLetterNumber;
+        this.cursorPosition.startPosition =
+          this.cursorPosition.endPosition.slice();
+        break;
     }
 
+    this.showCursor();
+  }
+
+  showCursor() {
     const cursorPositionSpan = this.visibleEditor.nativeElement
       .querySelectorAll('.row')
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
@@ -466,20 +565,28 @@ export class EditorComponent implements AfterViewInit {
     ];
     this.visibleEditor.nativeElement
       .querySelector('.selected')
-      .classList.remove('selected');
+      ?.classList.remove('selected');
+
     cursorPositionSpan?.classList.add('selected');
+  }
+
+  removeCursor() {
+    document.querySelector('.selected')?.classList.remove('selected');
   }
 
   @HostListener('document:mousedown', ['$event']) onClick(
     event: KeyboardEvent
   ) {
     this.removeHighlight();
+    this.isSelectionActive = false;
     this.isFocused = false;
+    this.removeCursor();
   }
 
   @HostListener('document:keydown', ['$event']) onKeydown(
     event: KeyboardEvent
   ) {
+    console.log(event.key);
     this.removeHighlight();
     if (!this.isFocused) return;
     if (
@@ -508,7 +615,8 @@ export class EditorComponent implements AfterViewInit {
       event.key.match(/^[a-z0-9]$/i) ||
       event.key === ' ' ||
       event.key === 'Enter' ||
-      event.key === 'Backspace'
+      event.key === 'Backspace' ||
+      event.key === 'Delete'
     )
       this.writeText(event);
   }
