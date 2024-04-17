@@ -43,9 +43,7 @@ export class EditorComponent implements AfterViewInit {
   }
 
   writeText(event: KeyboardEvent | any) {
-    const visibleEditor = this.elementRef.nativeElement.querySelector(
-      'div.visible-text'
-    ) as HTMLDivElement;
+    const visibleEditor = this.visibleEditor.nativeElement as HTMLDivElement;
     const angularId = visibleEditor.attributes[0];
     //remove
     if (event.key === 'Backspace' || event.key === 'Delete') {
@@ -63,21 +61,48 @@ export class EditorComponent implements AfterViewInit {
       return;
     }
     //new row
-    let row;
     if (visibleEditor.childElementCount === 0 || event.key === 'Enter') {
+      const selectedRow =
+        visibleEditor.querySelectorAll('.row')[
+          this.cursorPosition.endPosition[0]
+        ];
+      const newRow = this.createEditorRow(
+        angularId,
+        this.cursorPosition.endPosition[0] + 1
+      );
+      newRow.appendChild(
+        this.createEditorLetter(angularId, this.END_OF_LINE_CHAR, -1)
+      );
+      if (selectedRow) {
+        selectedRow.insertAdjacentElement('afterend', newRow);
+        const i = this.cursorPosition.endPosition[1];
+        while (i < selectedRow.childElementCount - 1) {
+          const childText = selectedRow.childNodes[i].textContent ?? '';
+          const newLetter = this.createEditorLetter(
+            angularId,
+            childText,
+            newRow.childElementCount - 1
+          );
+          (newRow.lastChild as HTMLSpanElement).insertAdjacentElement(
+            'beforebegin',
+            newLetter
+          );
+          selectedRow.childNodes[i].remove();
+        }
+      } else visibleEditor.appendChild(newRow);
+
       this.cursorPosition.endPosition[0]++;
       this.cursorPosition.endPosition[1] = 0;
       this.cursorPosition.startPosition =
         this.cursorPosition.endPosition.slice();
 
-      row = this.createEditorRow(
-        visibleEditor,
-        angularId,
-        this.cursorPosition.endPosition[0]
-      );
-      row.appendChild(
-        this.createEditorLetter(angularId, this.END_OF_LINE_CHAR, -1, true)
-      );
+      const newFocus = visibleEditor
+        .querySelectorAll('.row')
+        [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
+        this.cursorPosition.endPosition[1]
+      ];
+      newFocus.focus();
+      newFocus.classList.add('selected');
       return;
     }
     //write
@@ -91,6 +116,7 @@ export class EditorComponent implements AfterViewInit {
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
       this.cursorPosition.endPosition[1]
     ];
+    cursorPositionSpan.focus();
 
     for (let i = 0; i < data.length; i++) {
       const newLetter = this.createEditorLetter(
@@ -103,7 +129,6 @@ export class EditorComponent implements AfterViewInit {
       this.cursorPosition.startPosition =
         this.cursorPosition.endPosition.slice();
       this.text = visibleEditor.textContent ?? '';
-      console.log(this.text);
     }
   }
 
@@ -244,14 +269,13 @@ export class EditorComponent implements AfterViewInit {
     return span;
   }
 
-  createEditorRow(editor: HTMLDivElement, angularId: Attr, position: number) {
+  createEditorRow(angularId: Attr, position: number) {
     let row = document.createElement('div');
     row.classList.add('row');
     row.setAttribute(angularId.name, angularId.value);
     row.setAttribute('position', position.toString());
     row.addEventListener('mousedown', this.getStartRowSelection.bind(this));
     row.addEventListener('mouseup', this.getEndRowSelection.bind(this));
-    editor.appendChild(row);
     return row;
   }
 
