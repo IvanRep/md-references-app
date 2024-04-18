@@ -384,11 +384,6 @@ export class EditorComponent implements AfterViewInit {
       }
       span.classList.add('highlighted');
       this.selectedLetters.push(span);
-      let text = '';
-      this.selectedLetters.forEach((letter) => {
-        text += letter.textContent;
-      });
-      console.log(text);
     }
   }
 
