@@ -6,6 +6,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { CursorPosition } from '@/app/types/CursorPosition';
+import MarkdownParser from '@/app/utils/MarkdownParser';
 
 @Component({
   selector: 'app-editor',
@@ -58,6 +59,12 @@ export class EditorComponent implements AfterViewInit {
       else if (event.key === 'Backspace') this.deleteOneLetter(visibleEditor);
       else if (event.key === 'Delete')
         this.deleteOneLetterForward(visibleEditor);
+
+      const selectedRow =
+        visibleEditor.querySelectorAll('.row')[
+          this.cursorPosition.endPosition[0]
+        ];
+      setTimeout(() => this.checkMarkdown(selectedRow as HTMLDivElement));
       return;
     }
     //new row
@@ -95,7 +102,7 @@ export class EditorComponent implements AfterViewInit {
       this.cursorPosition.endPosition[1] = 0;
       this.cursorPosition.startPosition =
         this.cursorPosition.endPosition.slice();
-
+      visibleEditor.querySelector('.selected')?.classList.remove('selected');
       const newFocus = visibleEditor
         .querySelectorAll('.row')
         [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
@@ -103,14 +110,13 @@ export class EditorComponent implements AfterViewInit {
       ];
       newFocus.focus();
       newFocus.classList.add('selected');
+
+      setTimeout(() => this.checkMarkdown(selectedRow as HTMLDivElement));
+      setTimeout(() => this.checkMarkdown(newRow as HTMLDivElement));
       return;
     }
     //write
     const data = event.data ? event.data : event.key;
-    // this.text =
-    //   this.text.substring(0, this.cursorPosition[0]) +
-    //   data +
-    //   this.text.substring(this.cursorPosition[1]);
     const cursorPositionSpan = visibleEditor
       .querySelectorAll('.row')
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
@@ -130,34 +136,16 @@ export class EditorComponent implements AfterViewInit {
         this.cursorPosition.endPosition.slice();
       this.text = visibleEditor.textContent ?? '';
     }
+
+    setTimeout(() =>
+      this.checkMarkdown(cursorPositionSpan.parentElement as HTMLDivElement)
+    );
   }
 
   deleteLetters(visibleEditor: HTMLDivElement) {
-    console.log(this.cursorPosition);
     let minRowIndex, maxRowIndex;
-    if (
-      this.cursorPosition.startPosition[0] ===
-      this.cursorPosition.endPosition[0]
-    ) {
-      this.cursorPosition.startPosition[1] < this.cursorPosition.endPosition[1]
-        ? ([minRowIndex, maxRowIndex] = [
-            this.cursorPosition.startPosition.slice(),
-            this.cursorPosition.endPosition.slice(),
-          ])
-        : ([minRowIndex, maxRowIndex] = [
-            this.cursorPosition.endPosition.slice(),
-            this.cursorPosition.startPosition.slice(),
-          ]);
-    } else if (
-      this.cursorPosition.startPosition[0] < this.cursorPosition.endPosition[0]
-    ) {
-      minRowIndex = this.cursorPosition.startPosition.slice();
-      maxRowIndex = this.cursorPosition.endPosition.slice();
-    } else {
-      minRowIndex = this.cursorPosition.endPosition.slice();
-      maxRowIndex = this.cursorPosition.startPosition.slice();
-    }
-    this.cursorPosition.endPosition = minRowIndex;
+
+    this.cursorPosition.endPosition = this.getMinCursorPosition();
 
     for (let i = this.selectedLetters.length - 1; i >= 0; i--) {
       this.selectedLetters.pop();
@@ -376,14 +364,31 @@ export class EditorComponent implements AfterViewInit {
       const previousSpanPosition = [...editorSpans].indexOf(
         this.selectedLetters[this.selectedLetters.length - 1]
       );
-      if (previousSpanPosition + 1 !== spanPosition) {
+      if (
+        previousSpanPosition < spanPosition &&
+        previousSpanPosition + 1 !== spanPosition
+      ) {
         for (let i = previousSpanPosition + 1; i < spanPosition; i++) {
+          editorSpans[i].classList.add('highlighted');
+          this.selectedLetters.push(editorSpans[i] as HTMLSpanElement);
+        }
+      }
+      if (
+        previousSpanPosition > spanPosition &&
+        previousSpanPosition - 1 !== spanPosition
+      ) {
+        for (let i = previousSpanPosition - 1; i > spanPosition; i--) {
           editorSpans[i].classList.add('highlighted');
           this.selectedLetters.push(editorSpans[i] as HTMLSpanElement);
         }
       }
       span.classList.add('highlighted');
       this.selectedLetters.push(span);
+      let text = '';
+      this.selectedLetters.forEach((letter) => {
+        text += letter.textContent;
+      });
+      console.log(text);
     }
   }
 
@@ -545,6 +550,67 @@ export class EditorComponent implements AfterViewInit {
     document.querySelector('.selected')?.classList.remove('selected');
   }
 
+  getMinCursorPosition() {
+    if (
+      this.cursorPosition.startPosition[0] ===
+      this.cursorPosition.endPosition[0]
+    ) {
+      return this.cursorPosition.startPosition[1] <
+        this.cursorPosition.endPosition[1]
+        ? this.cursorPosition.startPosition.slice()
+        : this.cursorPosition.endPosition.slice();
+    } else if (
+      this.cursorPosition.startPosition[0] < this.cursorPosition.endPosition[0]
+    ) {
+      return this.cursorPosition.startPosition.slice();
+    } else {
+      return this.cursorPosition.endPosition.slice();
+    }
+  }
+
+  checkMarkdown(container: HTMLDivElement) {
+    if (!container || !container.textContent) return;
+    this.removeMarkdown(container);
+    const text = container.textContent.split(this.END_OF_LINE_CHAR)[0];
+    const matches = MarkdownParser.matchMarkdownRegex(text);
+    for (let match of matches) {
+      const { type, index, length, content } = match;
+      for (let i = index; i <= length; i++) {
+        container.children[i].classList.add(type);
+      }
+    }
+  }
+
+  removeMarkdown(container: HTMLDivElement) {
+    if (!container) return;
+    for (let child of container.children) {
+      const markdownClasses = Object.keys(MarkdownParser.MARKDOWN_REGEX);
+
+      child.classList.remove(...markdownClasses);
+    }
+  }
+
+  paste() {
+    navigator.clipboard.readText().then((text) => {
+      this.writeText({ data: text });
+    });
+  }
+
+  copy() {
+    const minCursorPosition = this.getMinCursorPosition();
+    if (
+      minCursorPosition[0] === this.cursorPosition.endPosition[0] &&
+      minCursorPosition[1] === this.cursorPosition.endPosition[1]
+    )
+      this.selectedLetters.reverse();
+
+    let selectedText = '';
+    this.selectedLetters.forEach((span) => {
+      selectedText += span.textContent;
+    });
+    navigator.clipboard.writeText(selectedText);
+  }
+
   @HostListener('document:mousedown', ['$event']) onClick(
     event: KeyboardEvent
   ) {
@@ -557,9 +623,10 @@ export class EditorComponent implements AfterViewInit {
   @HostListener('document:keydown', ['$event']) onKeydown(
     event: KeyboardEvent
   ) {
-    console.log(event.key);
-    this.removeHighlight();
-    if (!this.isFocused) return;
+    if (!this.isFocused) {
+      this.removeHighlight();
+      return;
+    }
     if (
       event.key === 'ArrowUp' ||
       event.key === 'ArrowDown' ||
@@ -570,25 +637,37 @@ export class EditorComponent implements AfterViewInit {
       event.key === 'PageDown' ||
       event.key === 'PageUp'
     ) {
+      this.removeHighlight();
       this.moveCursor(event.key);
       return;
     }
     if (event.key === 'Tab') {
       event.preventDefault();
       event.stopPropagation();
-      console.log(this.cursorPosition);
+      this.removeHighlight();
       this.writeText({
         data: ' '.repeat(this.TAB_SIZE),
       });
       return;
     }
+    if (event.ctrlKey && event.key === 'v') {
+      this.removeHighlight();
+      this.paste();
+      return;
+    }
+    if (event.ctrlKey && event.key === 'c') {
+      this.copy();
+      return;
+    }
     if (
-      event.key.match(/^[a-z0-9]$/i) ||
+      event.key.match(/^\S$/i) ||
       event.key === ' ' ||
       event.key === 'Enter' ||
       event.key === 'Backspace' ||
       event.key === 'Delete'
-    )
+    ) {
+      this.removeHighlight();
       this.writeText(event);
+    }
   }
 }
