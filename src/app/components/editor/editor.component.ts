@@ -21,6 +21,22 @@ export class EditorComponent implements AfterViewInit {
   @ViewChild('visibleEditor') visibleEditor!: ElementRef;
   TAB_SIZE: number = 4;
   END_OF_LINE_CHAR: string = '\n';
+  WORD_SEPARATOR: string[] = [
+    ' ',
+    '\n',
+    '\t',
+    '.',
+    ',',
+    '!',
+    '?',
+    '_',
+    '(',
+    ')',
+    '[',
+    ']',
+    '{',
+    '}',
+  ];
   text: string = '';
   cursorPosition: CursorPosition = {
     startPosition: [-1, -1],
@@ -347,6 +363,7 @@ export class EditorComponent implements AfterViewInit {
 
   overSelection(event: MouseEvent) {
     if (!this.isSelectionActive) return;
+    console.log('gola');
     const span = event.currentTarget as HTMLSpanElement;
     if (span.classList.contains('highlighted')) {
       this.selectedLetters = this.selectedLetters.filter(
@@ -413,18 +430,22 @@ export class EditorComponent implements AfterViewInit {
     }
   }
 
+  //Doesn't work
   getStartRowSelection(event: MouseEvent) {
     if (event.button !== 0) return;
+    this.selectedLetters = [];
+    this.isSelectionActive = true;
+
     const row = event.target as HTMLDivElement;
-    const rowPosition = [
-      ...this.elementRef.nativeElement.querySelectorAll('.row'),
-    ].indexOf(row as HTMLDivElement);
-    this.cursorPosition.startPosition[0] = rowPosition;
-    this.cursorPosition.startPosition[1] = row.childElementCount - 1;
+    const span = row.lastElementChild as HTMLSpanElement;
+    const newEvent = new MouseEvent('mousedown', { button: 0 });
+    span.dispatchEvent(newEvent);
   }
 
   getEndRowSelection(event: MouseEvent) {
     if (event.button !== 0) return;
+    this.isSelectionActive = false;
+
     const row = event.target as HTMLDivElement;
     const rowPosition = [
       ...this.elementRef.nativeElement.querySelectorAll('.row'),
@@ -434,13 +455,18 @@ export class EditorComponent implements AfterViewInit {
     span.classList.add('selected');
     this.cursorPosition.endPosition[0] = rowPosition;
     this.cursorPosition.endPosition[1] = row.childElementCount - 1;
+
+    if (span.isSameNode(this.selectedLetters[0])) {
+      this.removeHighlight();
+      return;
+    }
   }
 
-  moveCursor(move: string) {
+  moveCursor(move: KeyboardEvent) {
     const cursorPositionRow = this.elementRef.nativeElement.querySelectorAll(
       '.row'
     )[this.cursorPosition.endPosition[0]] as HTMLDivElement;
-    switch (move) {
+    switch (move.key) {
       case 'ArrowLeft':
         if (this.cursorPosition.endPosition[1] <= 0) {
           if (!cursorPositionRow.previousElementSibling) return;
@@ -450,9 +476,18 @@ export class EditorComponent implements AfterViewInit {
         } else {
           this.cursorPosition.endPosition[1]--;
         }
-
         this.cursorPosition.startPosition =
           this.cursorPosition.endPosition.slice();
+        // Move cursor to next word
+        if (move.ctrlKey) {
+          const span = this.visibleEditor.nativeElement
+            .querySelectorAll('.row')
+            [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
+            this.cursorPosition.endPosition[1] - 1
+          ];
+          if (!span || this.WORD_SEPARATOR.includes(span.textContent)) return;
+          this.moveCursor(move);
+        }
         break;
       case 'ArrowRight':
         if (
@@ -468,6 +503,16 @@ export class EditorComponent implements AfterViewInit {
 
         this.cursorPosition.startPosition =
           this.cursorPosition.endPosition.slice();
+        // Move cursor to next word
+        if (move.ctrlKey) {
+          const span = this.visibleEditor.nativeElement
+            .querySelectorAll('.row')
+            [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
+            this.cursorPosition.endPosition[1]
+          ];
+          if (!span || this.WORD_SEPARATOR.includes(span.textContent)) return;
+          this.moveCursor(move);
+        }
         break;
       case 'ArrowUp':
         if (!cursorPositionRow.previousElementSibling) {
@@ -633,7 +678,7 @@ export class EditorComponent implements AfterViewInit {
       event.key === 'PageUp'
     ) {
       this.removeHighlight();
-      this.moveCursor(event.key);
+      this.moveCursor(event);
       return;
     }
     if (event.key === 'Tab') {
