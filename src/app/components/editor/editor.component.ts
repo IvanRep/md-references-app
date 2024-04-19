@@ -363,7 +363,6 @@ export class EditorComponent implements AfterViewInit {
 
   overSelection(event: MouseEvent) {
     if (!this.isSelectionActive) return;
-    console.log('gola');
     const span = event.currentTarget as HTMLSpanElement;
     if (span.classList.contains('highlighted')) {
       this.selectedLetters = this.selectedLetters.filter(
@@ -381,7 +380,9 @@ export class EditorComponent implements AfterViewInit {
       const previousSpanPosition = [...editorSpans].indexOf(
         this.selectedLetters[this.selectedLetters.length - 1]
       );
+      console.log(previousSpanPosition, spanPosition);
       if (
+        previousSpanPosition !== -1 &&
         previousSpanPosition < spanPosition &&
         previousSpanPosition + 1 !== spanPosition
       ) {
@@ -391,6 +392,7 @@ export class EditorComponent implements AfterViewInit {
         }
       }
       if (
+        previousSpanPosition !== -1 &&
         previousSpanPosition > spanPosition &&
         previousSpanPosition - 1 !== spanPosition
       ) {
@@ -466,6 +468,11 @@ export class EditorComponent implements AfterViewInit {
     const cursorPositionRow = this.elementRef.nativeElement.querySelectorAll(
       '.row'
     )[this.cursorPosition.endPosition[0]] as HTMLDivElement;
+    let cursorPositionLetter =
+      cursorPositionRow.querySelectorAll('span')[
+        this.cursorPosition.endPosition[1]
+      ];
+    //Move
     switch (move.key) {
       case 'ArrowLeft':
         if (this.cursorPosition.endPosition[1] <= 0) {
@@ -476,20 +483,43 @@ export class EditorComponent implements AfterViewInit {
         } else {
           this.cursorPosition.endPosition[1]--;
         }
-        this.cursorPosition.startPosition =
-          this.cursorPosition.endPosition.slice();
+
         // Move cursor to next word
         if (move.ctrlKey) {
-          const span = this.visibleEditor.nativeElement
+          const cursorPositionAfterMove = this.visibleEditor.nativeElement
             .querySelectorAll('.row')
             [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
             this.cursorPosition.endPosition[1] - 1
           ];
-          if (!span || this.WORD_SEPARATOR.includes(span.textContent)) return;
+          if (
+            !cursorPositionAfterMove ||
+            this.WORD_SEPARATOR.includes(cursorPositionAfterMove.textContent)
+          )
+            return;
           this.moveCursor(move);
+        }
+        //Shift + Arrow -> Active Selection key (Left Version [after move])
+        if (move.shiftKey) {
+          cursorPositionLetter = this.visibleEditor.nativeElement
+            .querySelectorAll('.row')
+            [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
+            this.cursorPosition.endPosition[1]
+          ];
+          const mouseEvent = new MouseEvent('mouseover');
+          this.isSelectionActive = true;
+          cursorPositionLetter?.dispatchEvent(mouseEvent);
+          this.isSelectionActive = false;
         }
         break;
       case 'ArrowRight':
+        //Shift + Arrow -> Active Selection key (Right Version [pre move])
+        if (move.shiftKey) {
+          const mouseEvent = new MouseEvent('mouseover');
+          this.isSelectionActive = true;
+          cursorPositionLetter?.dispatchEvent(mouseEvent);
+          this.isSelectionActive = false;
+        }
+
         if (
           this.cursorPosition.endPosition[1] >=
           cursorPositionRow.childElementCount - 1
@@ -501,20 +531,37 @@ export class EditorComponent implements AfterViewInit {
           this.cursorPosition.endPosition[1]++;
         }
 
-        this.cursorPosition.startPosition =
-          this.cursorPosition.endPosition.slice();
         // Move cursor to next word
         if (move.ctrlKey) {
-          const span = this.visibleEditor.nativeElement
+          const cursorPositionAfterMove = this.visibleEditor.nativeElement
             .querySelectorAll('.row')
             [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
             this.cursorPosition.endPosition[1]
           ];
-          if (!span || this.WORD_SEPARATOR.includes(span.textContent)) return;
+          if (
+            !cursorPositionAfterMove ||
+            this.WORD_SEPARATOR.includes(cursorPositionAfterMove.textContent)
+          )
+            return;
           this.moveCursor(move);
         }
         break;
       case 'ArrowUp':
+        //Shift + Arrow -> Active Selection key (Up Version [before move])
+        if (move.shiftKey) {
+          !cursorPositionLetter.previousElementSibling
+            ? (cursorPositionLetter = cursorPositionRow?.previousElementSibling
+                ?.lastElementChild as HTMLSpanElement)
+            : (cursorPositionLetter =
+                cursorPositionLetter.previousElementSibling as HTMLSpanElement);
+          const mouseEvent = new MouseEvent('mouseover');
+          this.isSelectionActive = true;
+          cursorPositionLetter.previousElementSibling?.dispatchEvent(
+            mouseEvent
+          );
+          this.isSelectionActive = false;
+        }
+
         if (!cursorPositionRow.previousElementSibling) {
           this.cursorPosition.endPosition[1] = 0;
         } else {
@@ -527,10 +574,30 @@ export class EditorComponent implements AfterViewInit {
               ? this.cursorPosition.endPosition[1]
               : previousRowLastLetterNumber;
         }
-        this.cursorPosition.startPosition =
-          this.cursorPosition.endPosition.slice();
+
+        //Shift + Arrow -> Active Selection key (Up Version [after move])
+        if (move.shiftKey) {
+          cursorPositionLetter = this.visibleEditor.nativeElement
+            .querySelectorAll('.row')
+            [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
+            this.cursorPosition.endPosition[1]
+          ];
+          const mouseEvent = new MouseEvent('mouseover');
+          this.isSelectionActive = true;
+          cursorPositionLetter?.dispatchEvent(mouseEvent);
+          this.isSelectionActive = false;
+        }
+
         break;
       case 'ArrowDown':
+        //Shift + Arrow -> Active Selection key (Down Version [before move])
+        if (move.shiftKey) {
+          const mouseEvent = new MouseEvent('mouseover');
+          this.isSelectionActive = true;
+          cursorPositionLetter?.dispatchEvent(mouseEvent);
+          this.isSelectionActive = false;
+        }
+
         if (!cursorPositionRow.nextElementSibling) {
           this.cursorPosition.endPosition[1] =
             cursorPositionRow.childElementCount - 1;
@@ -544,8 +611,24 @@ export class EditorComponent implements AfterViewInit {
               ? this.cursorPosition.endPosition[1]
               : nextRowLettersCount;
         }
-        this.cursorPosition.startPosition =
-          this.cursorPosition.endPosition.slice();
+
+        //Shift + Arrow -> Active Selection key (Down Version [after move])
+        if (move.shiftKey) {
+          cursorPositionLetter = this.visibleEditor.nativeElement
+            .querySelectorAll('.row')
+            [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
+            this.cursorPosition.endPosition[1]
+          ];
+          !cursorPositionLetter.previousElementSibling
+            ? (cursorPositionLetter = cursorPositionLetter.parentElement
+                ?.previousElementSibling?.lastElementChild as HTMLSpanElement)
+            : (cursorPositionLetter =
+                cursorPositionLetter.previousElementSibling as HTMLSpanElement);
+          const mouseEvent = new MouseEvent('mouseover');
+          this.isSelectionActive = true;
+          cursorPositionLetter?.dispatchEvent(mouseEvent);
+          this.isSelectionActive = false;
+        }
         break;
       case 'End':
       case 'PageDown':
@@ -556,8 +639,7 @@ export class EditorComponent implements AfterViewInit {
         this.cursorPosition.endPosition[0] =
           this.visibleEditor.nativeElement.childElementCount - 1;
         this.cursorPosition.endPosition[1] = lastLetterNumber;
-        this.cursorPosition.startPosition =
-          this.cursorPosition.endPosition.slice();
+
         break;
       case 'Home':
       case 'PageUp':
@@ -565,11 +647,16 @@ export class EditorComponent implements AfterViewInit {
         const firstLetterNumber = 0;
         this.cursorPosition.endPosition[0] = firstRowNumber;
         this.cursorPosition.endPosition[1] = firstLetterNumber;
-        this.cursorPosition.startPosition =
-          this.cursorPosition.endPosition.slice();
+
         break;
     }
 
+    //Selection key
+    if (!move.shiftKey)
+      this.cursorPosition.startPosition =
+        this.cursorPosition.endPosition.slice();
+
+    //Show cursor
     this.showCursor();
   }
 
@@ -677,7 +764,10 @@ export class EditorComponent implements AfterViewInit {
       event.key === 'PageDown' ||
       event.key === 'PageUp'
     ) {
-      this.removeHighlight();
+      if (!event.shiftKey) {
+        this.selectedLetters = [];
+        this.removeHighlight();
+      }
       this.moveCursor(event);
       return;
     }
@@ -697,6 +787,24 @@ export class EditorComponent implements AfterViewInit {
     }
     if (event.ctrlKey && event.key === 'c') {
       this.copy();
+      return;
+    }
+    if (event.ctrlKey && event.key === 'a') {
+      const lastRow = this.visibleEditor.nativeElement.children[
+        this.visibleEditor.nativeElement.children.length - 1
+      ] as HTMLDivElement;
+      const firstLetter = this.visibleEditor.nativeElement.querySelector(
+        'span'
+      ) as HTMLSpanElement;
+      const lastLetter = lastRow.lastElementChild as HTMLSpanElement;
+      this.cursorPosition.startPosition = [0, 0];
+      this.cursorPosition.endPosition = [
+        this.visibleEditor.nativeElement.children.length - 1,
+        lastRow.children.length - 1,
+      ];
+      this.selectedLetters = [];
+      firstLetter.dispatchEvent(new MouseEvent('mousedown', { button: 0 }));
+      lastLetter.dispatchEvent(new MouseEvent('mouseover'));
       return;
     }
     if (
