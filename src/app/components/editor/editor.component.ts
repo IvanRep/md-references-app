@@ -4,6 +4,8 @@ import {
   ElementRef,
   HostListener,
   Input,
+  OnChanges,
+  SimpleChanges,
   ViewChild,
 } from '@angular/core';
 import { type CursorPosition } from '@/app/types/CursorPosition';
@@ -17,7 +19,7 @@ import MarkdownParser from '@/app/utils/MarkdownParser';
   templateUrl: './editor.component.html',
   styleUrl: './editor.component.css',
 })
-export class EditorComponent implements AfterViewInit {
+export class EditorComponent implements AfterViewInit, OnChanges {
   constructor(private elementRef: ElementRef) {}
 
   @ViewChild('visibleEditor') visibleEditor!: ElementRef;
@@ -52,6 +54,18 @@ export class EditorComponent implements AfterViewInit {
   isLastActionDelete: boolean = false;
 
   ngAfterViewInit(): void {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (
+      changes['text'] &&
+      !changes['text'].isFirstChange() &&
+      changes['text'].currentValue !== changes['text'].previousValue
+    ) {
+      console.log(changes);
+      this.writeText({}, false);
+      this.writeText({ data: this.text }, false);
+    }
+  }
 
   focusEditor() {
     const visibleEditor = this.elementRef.nativeElement.querySelector(
@@ -900,6 +914,8 @@ export class EditorComponent implements AfterViewInit {
       this.removeHighlight();
       return;
     }
+    event.preventDefault();
+    event.stopPropagation();
     if (
       event.key === 'ArrowUp' ||
       event.key === 'ArrowDown' ||
