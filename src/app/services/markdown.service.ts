@@ -8,15 +8,25 @@ const referenceList: Reference[] = [];
   providedIn: 'platform',
 })
 export class MarkdownService {
-  private referenceSubject = new Subject<Reference[]>();
-  referenceList$: Observable<Reference[]> =
-    this.referenceSubject.asObservable();
+  referenceSubject = new Subject<Reference[]>();
+  referenceList: Reference[] = [];
 
-  private markdownFileSubject = new Subject<File>();
-  markdownFile: Observable<File | undefined> =
-    this.markdownFileSubject.asObservable();
+  markdownFileSubject = new Subject<File>();
+  markdownFile: File | undefined = undefined;
 
-  constructor() {}
+  constructor() {
+    this.markdownFileSubject.subscribe({
+      next: (file: File) => {
+        this.markdownFile = file;
+      },
+    });
+
+    this.referenceSubject.subscribe({
+      next: (referenceList: Reference[]) => {
+        this.referenceList = referenceList;
+      },
+    });
+  }
 
   setMarkdown(file: File): void {
     this.markdownFileSubject.next(file);

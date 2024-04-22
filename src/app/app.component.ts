@@ -24,7 +24,7 @@ export class AppComponent implements OnInit {
     private markdownService: MarkdownService
   ) {}
   ngOnInit(): void {
-    this.markdownService.referenceList$.subscribe((references) =>
+    this.markdownService.referenceSubject.subscribe((references) =>
       this.checkReferences(references)
     );
   }

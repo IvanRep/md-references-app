@@ -16,11 +16,17 @@ export class MdReferencesComponent implements AfterViewInit {
   constructor(private markdownService: MarkdownService) {}
 
   ngAfterViewInit(): void {
-    this.markdownService.markdownFile.subscribe((file: File | undefined) => {
-      if (!file) return;
-      file.text().then((text: string) => {
-        this.markdownText = text;
-      });
+    this.markdownService.markdownFile?.text().then((text: string) => {
+      this.markdownText = text;
     });
+
+    this.markdownService.markdownFileSubject.subscribe(
+      (file: File | undefined) => {
+        if (!file) return;
+        file.text().then((text: string) => {
+          this.markdownText = text;
+        });
+      }
+    );
   }
 }

@@ -20,11 +20,15 @@ import { Observable } from 'rxjs';
   styleUrl: './references.component.css',
 })
 export class ReferencesComponent implements OnChanges {
-  referenceList: Observable<Reference[]> = this.markdownService.referenceList$;
+  referenceList: Reference[] = this.markdownService.referenceList;
 
-  constructor(private markdownService: MarkdownService) {}
-
-  ngOnChanges(changes: SimpleChanges): void {
-    console.log(changes);
+  constructor(private markdownService: MarkdownService) {
+    this.markdownService.referenceSubject.subscribe({
+      next: (referenceList: Reference[]) => {
+        this.referenceList = referenceList;
+      },
+    });
   }
+
+  ngOnChanges(changes: SimpleChanges): void {}
 }

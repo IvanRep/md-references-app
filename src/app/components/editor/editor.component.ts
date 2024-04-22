@@ -5,6 +5,7 @@ import {
   HostListener,
   Input,
   OnChanges,
+  OnDestroy,
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
@@ -19,7 +20,7 @@ import MarkdownParser from '@/app/utils/MarkdownParser';
   templateUrl: './editor.component.html',
   styleUrl: './editor.component.css',
 })
-export class EditorComponent implements AfterViewInit, OnChanges {
+export class EditorComponent implements AfterViewInit, OnChanges, OnDestroy {
   constructor(private elementRef: ElementRef) {}
 
   @ViewChild('visibleEditor') visibleEditor!: ElementRef;
@@ -55,6 +56,7 @@ export class EditorComponent implements AfterViewInit, OnChanges {
 
   ngAfterViewInit(): void {
     this.writeText({}, false);
+    this.writeText({ data: this.text }, false);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -66,6 +68,10 @@ export class EditorComponent implements AfterViewInit, OnChanges {
       console.log(changes);
       this.writeText({ data: this.text }, false);
     }
+  }
+
+  ngOnDestroy(): void {
+    console.log('destroy');
   }
 
   focusEditor() {

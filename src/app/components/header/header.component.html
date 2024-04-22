@@ -3,7 +3,22 @@
     <app-folder></app-folder>
   </button>
   <app-search-bar></app-search-bar>
-  <button type="button" title="Vista Markdown" routerLink="/md">
+  <button
+    type="button"
+    title="Vista Markdown"
+    routerLink="/md"
+    routerLinkActive="is-active"
+    [routerLinkActiveOptions]="{ exact: true }"
+  >
+    <app-code></app-code>
+  </button>
+  <button
+    type="button"
+    title="Vista Referencias"
+    routerLink="/"
+    routerLinkActive="is-active"
+    [routerLinkActiveOptions]="{ exact: true }"
+  >
     <app-code></app-code>
   </button>
 </section>

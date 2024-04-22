@@ -7,12 +7,18 @@ import { MarkdownService } from '@/app/services/markdown.service';
 import { TypedError } from '@/app/error/TypedError';
 import { Reference } from '@/app/types/Reference';
 import { throwError } from 'rxjs';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [FolderComponent, SearchBarComponent, CodeComponent, RouterLink],
+  imports: [
+    FolderComponent,
+    SearchBarComponent,
+    CodeComponent,
+    RouterLink,
+    RouterLinkActive,
+  ],
   templateUrl: './header.component.html',
   styleUrl: './header.component.css',
 })
