@@ -5,7 +5,8 @@ import {
   HostListener,
   ViewChild,
 } from '@angular/core';
-import { CursorPosition } from '@/app/types/CursorPosition';
+import { type CursorPosition } from '@/app/types/CursorPosition';
+import { UndoAction, type UndoData } from '@/app/types/UndoData';
 import MarkdownParser from '@/app/utils/MarkdownParser';
 
 @Component({
@@ -38,6 +39,8 @@ export class EditorComponent implements AfterViewInit {
     '}',
   ];
   text: string = '';
+  undoStack: UndoData[] = [];
+  redoStack: UndoData[] = [];
   cursorPosition: CursorPosition = {
     startPosition: [-1, -1],
     endPosition: [-1, -1],
@@ -45,6 +48,7 @@ export class EditorComponent implements AfterViewInit {
   isFocused: boolean = false;
   isSelectionActive: boolean = false;
   selectedLetters: HTMLSpanElement[] = [];
+  isLastActionDelete: boolean = false;
 
   ngAfterViewInit(): void {}
 
@@ -54,93 +58,80 @@ export class EditorComponent implements AfterViewInit {
     ) as HTMLDivElement;
     this.isFocused = true;
     if (visibleEditor.childElementCount === 0) {
-      this.writeText({});
+      this.writeText({}, false);
     }
     this.showCursor();
   }
 
-  writeText(event: KeyboardEvent | any) {
+  writeText(event: KeyboardEvent | any, saveRecord: boolean = true) {
     const visibleEditor = this.visibleEditor.nativeElement as HTMLDivElement;
     const angularId = visibleEditor.attributes[0];
     //remove
     if (event.key === 'Backspace' || event.key === 'Delete') {
       if (visibleEditor.textContent === this.END_OF_LINE_CHAR) return;
+      let deletedLetters;
       if (
         this.cursorPosition.startPosition[0] !==
           this.cursorPosition.endPosition[0] ||
         this.cursorPosition.startPosition[1] !==
           this.cursorPosition.endPosition[1]
       )
-        this.deleteLetters(visibleEditor);
-      else if (event.key === 'Backspace') this.deleteOneLetter(visibleEditor);
+        deletedLetters = this.deleteLetters(visibleEditor);
+      else if (event.key === 'Backspace')
+        deletedLetters = this.deleteOneLetter(visibleEditor);
       else if (event.key === 'Delete')
-        this.deleteOneLetterForward(visibleEditor);
+        deletedLetters = this.deleteOneLetterForward(visibleEditor);
 
       const selectedRow =
         visibleEditor.querySelectorAll('.row')[
           this.cursorPosition.endPosition[0]
         ];
       setTimeout(() => this.checkMarkdown(selectedRow as HTMLDivElement));
+
+      if (saveRecord) {
+        if (!this.isLastActionDelete) this.createUndoRecord('delete');
+        this.updateUndoRecord(deletedLetters ?? '', 'delete');
+        this.isLastActionDelete = true;
+      }
       return;
     }
     //new row
     if (visibleEditor.childElementCount === 0 || event.key === 'Enter') {
-      const selectedRow =
-        visibleEditor.querySelectorAll('.row')[
-          this.cursorPosition.endPosition[0]
-        ];
-      const newRow = this.createEditorRow(
-        angularId,
-        this.cursorPosition.endPosition[0] + 1
-      );
-      newRow.appendChild(
-        this.createEditorLetter(angularId, this.END_OF_LINE_CHAR, -1)
-      );
-      if (selectedRow) {
-        selectedRow.insertAdjacentElement('afterend', newRow);
-        const i = this.cursorPosition.endPosition[1];
-        while (i < selectedRow.childElementCount - 1) {
-          const childText = selectedRow.childNodes[i].textContent ?? '';
-          const newLetter = this.createEditorLetter(
-            angularId,
-            childText,
-            newRow.childElementCount - 1
-          );
-          (newRow.lastChild as HTMLSpanElement).insertAdjacentElement(
-            'beforebegin',
-            newLetter
-          );
-          selectedRow.childNodes[i].remove();
-        }
-      } else visibleEditor.appendChild(newRow);
-
-      this.cursorPosition.endPosition[0]++;
-      this.cursorPosition.endPosition[1] = 0;
-      this.cursorPosition.startPosition =
-        this.cursorPosition.endPosition.slice();
-      visibleEditor.querySelector('.selected')?.classList.remove('selected');
-      const newFocus = visibleEditor
-        .querySelectorAll('.row')
-        [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
-        this.cursorPosition.endPosition[1]
-      ];
-      newFocus.focus();
-      newFocus.classList.add('selected');
-
-      setTimeout(() => this.checkMarkdown(selectedRow as HTMLDivElement));
-      setTimeout(() => this.checkMarkdown(newRow as HTMLDivElement));
+      this.doNewLane(visibleEditor, angularId, saveRecord);
       return;
     }
     //write
     const data = event.data ? event.data : event.key;
-    const cursorPositionSpan = visibleEditor
+    let cursorPositionSpan = visibleEditor
       .querySelectorAll('.row')
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
       this.cursorPosition.endPosition[1]
     ];
-    cursorPositionSpan.focus();
+    console.log(cursorPositionSpan);
+    if (saveRecord) {
+      const lastUndo = this.undoStack[this.undoStack.length - 1];
+      if (
+        !lastUndo ||
+        lastUndo.action !== 'write' ||
+        this.WORD_SEPARATOR.includes(data) ||
+        this.cursorPosition.endPosition[0] !== lastUndo?.cursor.row ||
+        this.cursorPosition.endPosition[1] !==
+          lastUndo?.cursor.column + lastUndo?.text.length
+      )
+        this.createUndoRecord('write');
+      this.updateUndoRecord(data, 'write');
+      this.isLastActionDelete = false;
+    }
 
     for (let i = 0; i < data.length; i++) {
+      if (data[i] === '\n') {
+        cursorPositionSpan = this.doNewLane(
+          visibleEditor,
+          angularId,
+          saveRecord
+        );
+        continue;
+      }
       const newLetter = this.createEditorLetter(
         angularId,
         data[i],
@@ -151,6 +142,7 @@ export class EditorComponent implements AfterViewInit {
       this.cursorPosition.startPosition =
         this.cursorPosition.endPosition.slice();
       this.text = visibleEditor.textContent ?? '';
+      newLetter.focus();
     }
 
     setTimeout(() =>
@@ -158,21 +150,114 @@ export class EditorComponent implements AfterViewInit {
     );
   }
 
-  deleteLetters(visibleEditor: HTMLDivElement) {
-    let minRowIndex, maxRowIndex;
+  createUndoRecord(action: UndoAction) {
+    this.redoStack = [];
+    this.undoStack.push({
+      text: '',
+      cursor: {
+        row: this.cursorPosition.endPosition[0],
+        column: this.cursorPosition.endPosition[1],
+      },
+      action: action,
+    });
+  }
 
+  updateUndoRecord(newText: string, action: UndoAction) {
+    let lastUndo = this.undoStack[this.undoStack.length - 1];
+    this.redoStack = [];
+
+    if (action === 'delete') {
+      lastUndo.text = newText + lastUndo.text;
+      console.log(this.cursorPosition.endPosition[1]);
+      lastUndo.cursor.column = this.cursorPosition.endPosition[1];
+    } else lastUndo.text += newText;
+    console.log(this.undoStack);
+  }
+
+  undo(actualRecordStack: UndoData[], newRecordStack: UndoData[]) {
+    console.log('actualRecordStack', actualRecordStack);
+    console.log('newRecordStack', newRecordStack);
+    const noSaveRecord = false;
+    const lastUndo = actualRecordStack.pop();
+    if (!lastUndo) return;
+    const lastUndoCursor = lastUndo.cursor;
+    const lastUndoText = lastUndo.text;
+    const selectedRow =
+      this.visibleEditor.nativeElement.querySelectorAll('.row')[
+        this.cursorPosition.endPosition[0]
+      ];
+    let newRedoRecord = {
+      text: lastUndoText,
+      cursor: {
+        row: lastUndoCursor.row,
+        column: lastUndoCursor.column,
+      },
+      action: lastUndo.action,
+    };
+    this.isLastActionDelete = false;
+
+    if (lastUndo.action === 'write') {
+      let textToDelete = lastUndo.text.split('\n');
+      this.cursorPosition.endPosition[0] =
+        lastUndoCursor.row + (textToDelete.length - 1);
+      this.cursorPosition.endPosition[1] =
+        textToDelete.length > 1
+          ? textToDelete[textToDelete.length - 1].length
+          : lastUndoCursor.column + lastUndoText.length;
+      this.cursorPosition.startPosition =
+        this.cursorPosition.endPosition.slice();
+      while (
+        this.cursorPosition.endPosition[1] > lastUndoCursor.column ||
+        this.cursorPosition.endPosition[0] > lastUndoCursor.row
+      ) {
+        this.writeText({ key: 'Backspace' }, noSaveRecord);
+      }
+      newRedoRecord.action = 'delete';
+      newRedoRecord.cursor.column = this.cursorPosition.endPosition[1];
+    }
+    if (lastUndo.action === 'delete') {
+      this.cursorPosition.endPosition[0] = lastUndoCursor.row;
+      this.cursorPosition.endPosition[1] = lastUndoCursor.column;
+      this.cursorPosition.startPosition =
+        this.cursorPosition.endPosition.slice();
+      this.writeText({ data: lastUndoText }, noSaveRecord);
+      newRedoRecord.action = 'write';
+    }
+
+    if (lastUndo.action === 'newLine') {
+      this.cursorPosition.endPosition[0] = lastUndoCursor.row + 1;
+      this.cursorPosition.endPosition[1] = 0;
+      this.cursorPosition.startPosition =
+        this.cursorPosition.endPosition.slice();
+      this.writeText({ key: 'Backspace' }, noSaveRecord);
+      newRedoRecord.action = 'delete';
+      newRedoRecord.cursor.column = this.cursorPosition.endPosition[1];
+      newRedoRecord.cursor.row = this.cursorPosition.endPosition[0];
+      newRedoRecord.text = '\n';
+    }
+
+    newRecordStack.push(newRedoRecord);
+    console.log('actualStack: ', actualRecordStack);
+    console.log('newStack: ', newRecordStack);
+  }
+
+  deleteLetters(visibleEditor: HTMLDivElement): string {
+    let deletedLetters = '';
     this.cursorPosition.endPosition = this.getMinCursorPosition();
 
     for (let i = this.selectedLetters.length - 1; i >= 0; i--) {
       this.selectedLetters.pop();
-      this.deleteOneLetterForward(visibleEditor);
+      deletedLetters += this.deleteOneLetterForward(visibleEditor);
     }
 
     this.cursorPosition.startPosition = this.cursorPosition.endPosition.slice();
+
+    return deletedLetters;
   }
 
-  private deleteOneLetter(visibleEditor: HTMLDivElement) {
+  private deleteOneLetter(visibleEditor: HTMLDivElement): string | undefined {
     const angularId = visibleEditor.attributes[0];
+    let deletedLetters = '';
     const letterPosition =
       this.cursorPosition.endPosition[1] <= 0
         ? 0
@@ -194,6 +279,9 @@ export class EditorComponent implements AfterViewInit {
         selectedLetter.parentElement.previousElementSibling.childElementCount -
         1;
 
+      deletedLetters +=
+        selectedLetter.parentElement.previousElementSibling?.lastChild
+          ?.textContent;
       selectedLetter.parentElement.previousElementSibling?.lastChild?.remove();
       selectedLetter.parentElement.childNodes.forEach((child: ChildNode) => {
         const span = child as HTMLSpanElement;
@@ -212,15 +300,21 @@ export class EditorComponent implements AfterViewInit {
     } else {
       this.cursorPosition.endPosition[1]--;
     }
-
+    deletedLetters += selectedLetter.textContent?.includes('\n')
+      ? ''
+      : selectedLetter.textContent;
     selectedLetter.remove();
 
     this.cursorPosition.startPosition = this.cursorPosition.endPosition.slice();
     this.showCursor();
+    return deletedLetters;
   }
 
-  private deleteOneLetterForward(visibleEditor: HTMLDivElement) {
+  private deleteOneLetterForward(
+    visibleEditor: HTMLDivElement
+  ): string | undefined {
     const angularId = visibleEditor.attributes[0];
+    let deletedLetters = '';
     let selectedRow =
       visibleEditor.querySelectorAll('.row')[
         this.cursorPosition.endPosition[0]
@@ -231,6 +325,7 @@ export class EditorComponent implements AfterViewInit {
       const nextRow = selectedRow.nextElementSibling;
       if (!selectedLetter.parentElement || !nextRow) return;
 
+      deletedLetters += selectedLetter.textContent;
       selectedLetter.remove();
       nextRow.childNodes.forEach((child: ChildNode) => {
         const span = child as HTMLSpanElement;
@@ -246,9 +341,13 @@ export class EditorComponent implements AfterViewInit {
       selectedLetter = nextRow as HTMLDivElement;
     }
 
+    deletedLetters += selectedLetter.textContent?.includes('\n')
+      ? ''
+      : selectedLetter.textContent;
     selectedLetter.remove();
 
     this.showCursor();
+    return deletedLetters;
   }
 
   createEditorLetter(
@@ -281,6 +380,62 @@ export class EditorComponent implements AfterViewInit {
     row.addEventListener('mousedown', this.getStartRowSelection.bind(this));
     row.addEventListener('mouseup', this.getEndRowSelection.bind(this));
     return row;
+  }
+
+  doNewLane(
+    visibleEditor: HTMLDivElement,
+    angularId: Attr,
+    saveRecord: boolean
+  ): HTMLSpanElement {
+    if (saveRecord) {
+      this.createUndoRecord('newLine');
+      this.isLastActionDelete = false;
+    }
+    const selectedRow =
+      visibleEditor.querySelectorAll('.row')[
+        this.cursorPosition.endPosition[0]
+      ];
+    const newRow = this.createEditorRow(
+      angularId,
+      this.cursorPosition.endPosition[0] + 1
+    );
+    newRow.appendChild(
+      this.createEditorLetter(angularId, this.END_OF_LINE_CHAR, -1)
+    );
+    if (selectedRow) {
+      selectedRow.insertAdjacentElement('afterend', newRow);
+      const i = this.cursorPosition.endPosition[1];
+      while (i < selectedRow.childElementCount - 1) {
+        const childText = selectedRow.childNodes[i].textContent ?? '';
+        const newLetter = this.createEditorLetter(
+          angularId,
+          childText,
+          newRow.childElementCount - 1
+        );
+        (newRow.lastChild as HTMLSpanElement).insertAdjacentElement(
+          'beforebegin',
+          newLetter
+        );
+        selectedRow.childNodes[i].remove();
+      }
+    } else visibleEditor.appendChild(newRow);
+
+    this.cursorPosition.endPosition[0]++;
+    this.cursorPosition.endPosition[1] = 0;
+    this.cursorPosition.startPosition = this.cursorPosition.endPosition.slice();
+    visibleEditor.querySelector('.selected')?.classList.remove('selected');
+    const newFocus = visibleEditor
+      .querySelectorAll('.row')
+      [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
+      this.cursorPosition.endPosition[1]
+    ] as HTMLSpanElement;
+    newFocus.focus();
+    newFocus.classList.add('selected');
+
+    setTimeout(() => this.checkMarkdown(selectedRow as HTMLDivElement));
+    setTimeout(() => this.checkMarkdown(newRow as HTMLDivElement));
+
+    return newFocus;
   }
 
   addHighlight() {
@@ -805,6 +960,14 @@ export class EditorComponent implements AfterViewInit {
       this.selectedLetters = [];
       firstLetter.dispatchEvent(new MouseEvent('mousedown', { button: 0 }));
       lastLetter.dispatchEvent(new MouseEvent('mouseover'));
+      return;
+    }
+    if (event.ctrlKey && event.key === 'z') {
+      this.undo(this.undoStack, this.redoStack);
+      return;
+    }
+    if (event.ctrlKey && event.key === 'y') {
+      this.undo(this.redoStack, this.undoStack);
       return;
     }
     if (
