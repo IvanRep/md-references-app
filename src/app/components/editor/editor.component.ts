@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   HostListener,
+  Input,
   ViewChild,
 } from '@angular/core';
 import { type CursorPosition } from '@/app/types/CursorPosition';
@@ -20,6 +21,7 @@ export class EditorComponent implements AfterViewInit {
   constructor(private elementRef: ElementRef) {}
 
   @ViewChild('visibleEditor') visibleEditor!: ElementRef;
+  @Input() text: string = '';
   TAB_SIZE: number = 4;
   END_OF_LINE_CHAR: string = '\n';
   WORD_SEPARATOR: string[] = [
@@ -38,7 +40,6 @@ export class EditorComponent implements AfterViewInit {
     '{',
     '}',
   ];
-  text: string = '';
   undoStack: UndoData[] = [];
   redoStack: UndoData[] = [];
   cursorPosition: CursorPosition = {
@@ -107,7 +108,6 @@ export class EditorComponent implements AfterViewInit {
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
       this.cursorPosition.endPosition[1]
     ];
-    console.log(cursorPositionSpan);
     if (saveRecord) {
       const lastUndo = this.undoStack[this.undoStack.length - 1];
       if (
@@ -168,15 +168,11 @@ export class EditorComponent implements AfterViewInit {
 
     if (action === 'delete') {
       lastUndo.text = newText + lastUndo.text;
-      console.log(this.cursorPosition.endPosition[1]);
       lastUndo.cursor.column = this.cursorPosition.endPosition[1];
     } else lastUndo.text += newText;
-    console.log(this.undoStack);
   }
 
   undo(actualRecordStack: UndoData[], newRecordStack: UndoData[]) {
-    console.log('actualRecordStack', actualRecordStack);
-    console.log('newRecordStack', newRecordStack);
     const noSaveRecord = false;
     const lastUndo = actualRecordStack.pop();
     if (!lastUndo) return;
@@ -237,8 +233,6 @@ export class EditorComponent implements AfterViewInit {
     }
 
     newRecordStack.push(newRedoRecord);
-    console.log('actualStack: ', actualRecordStack);
-    console.log('newStack: ', newRecordStack);
   }
 
   deleteLetters(visibleEditor: HTMLDivElement): string {
@@ -439,7 +433,6 @@ export class EditorComponent implements AfterViewInit {
   }
 
   addHighlight() {
-    console.log(this.cursorPosition);
     let minIndex, maxIndex;
     this.cursorPosition.startPosition[0] < this.cursorPosition.endPosition[0]
       ? ([minIndex, maxIndex] = [
@@ -535,7 +528,6 @@ export class EditorComponent implements AfterViewInit {
       const previousSpanPosition = [...editorSpans].indexOf(
         this.selectedLetters[this.selectedLetters.length - 1]
       );
-      console.log(previousSpanPosition, spanPosition);
       if (
         previousSpanPosition !== -1 &&
         previousSpanPosition < spanPosition &&
@@ -790,7 +782,6 @@ export class EditorComponent implements AfterViewInit {
         const lastRow = (this.visibleEditor.nativeElement as HTMLDivElement)
           .lastElementChild;
         const lastLetterNumber = lastRow!.childElementCount - 1;
-        console.log(lastLetterNumber);
         this.cursorPosition.endPosition[0] =
           this.visibleEditor.nativeElement.childElementCount - 1;
         this.cursorPosition.endPosition[1] = lastLetterNumber;
