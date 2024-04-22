@@ -53,7 +53,9 @@ export class EditorComponent implements AfterViewInit, OnChanges {
   selectedLetters: HTMLSpanElement[] = [];
   isLastActionDelete: boolean = false;
 
-  ngAfterViewInit(): void {}
+  ngAfterViewInit(): void {
+    this.writeText({}, false);
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (
@@ -62,7 +64,6 @@ export class EditorComponent implements AfterViewInit, OnChanges {
       changes['text'].currentValue !== changes['text'].previousValue
     ) {
       console.log(changes);
-      this.writeText({}, false);
       this.writeText({ data: this.text }, false);
     }
   }
@@ -113,10 +114,12 @@ export class EditorComponent implements AfterViewInit, OnChanges {
     //new row
     if (visibleEditor.childElementCount === 0 || event.key === 'Enter') {
       this.doNewLane(visibleEditor, angularId, saveRecord);
+      this.showCursor();
       return;
     }
     //write
     const data = event.data ? event.data : event.key;
+    if (!data) return;
     let cursorPositionSpan = visibleEditor
       .querySelectorAll('.row')
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
@@ -156,9 +159,8 @@ export class EditorComponent implements AfterViewInit, OnChanges {
       this.cursorPosition.startPosition =
         this.cursorPosition.endPosition.slice();
       this.text = visibleEditor.textContent ?? '';
-      newLetter.focus();
     }
-
+    this.showCursor();
     setTimeout(() =>
       this.checkMarkdown(cursorPositionSpan.parentElement as HTMLDivElement)
     );
@@ -825,12 +827,17 @@ export class EditorComponent implements AfterViewInit, OnChanges {
       .querySelectorAll('.row')
       [this.cursorPosition.endPosition[0]].querySelectorAll('span')[
       this.cursorPosition.endPosition[1]
-    ];
+    ] as HTMLSpanElement;
     this.visibleEditor.nativeElement
       .querySelector('.selected')
       ?.classList.remove('selected');
 
     cursorPositionSpan?.classList.add('selected');
+    cursorPositionSpan?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+      inline: 'center',
+    } as ScrollIntoViewOptions);
   }
 
   removeCursor() {
