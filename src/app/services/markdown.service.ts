@@ -2,19 +2,22 @@ import { Injectable, NgZone } from '@angular/core';
 import { Reference } from '@/app/types/Reference';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { TypedError } from '../error/TypedError';
+import { HttpClient } from '@angular/common/http';
 const referenceList: Reference[] = [];
 
 @Injectable({
   providedIn: 'platform',
 })
 export class MarkdownService {
+  API_URL = '';
+
   referenceSubject = new Subject<Reference[]>();
   referenceList: Reference[] = [];
 
   markdownFileSubject = new Subject<File>();
   markdownFile: File | undefined = undefined;
 
-  constructor() {
+  constructor(private http: HttpClient) {
     this.markdownFileSubject.subscribe({
       next: (file: File) => {
         this.markdownFile = file;
@@ -72,5 +75,22 @@ export class MarkdownService {
       }
     }
     this.referenceSubject.next(referenceList);
+  }
+
+  save() {
+    if (!this.markdownFile) return;
+
+    this.markdownFile.text().then((text) => {
+      const body = {
+        text: text,
+        user: {
+          id: 0,
+          user: '',
+          password: '',
+        },
+      };
+      console.log(body);
+      // this.http.post(this.API_URL, body).subscribe();
+    });
   }
 }

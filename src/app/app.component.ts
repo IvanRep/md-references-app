@@ -1,4 +1,10 @@
-import { Component, ErrorHandler, OnDestroy, OnInit } from '@angular/core';
+import {
+  Component,
+  ErrorHandler,
+  HostListener,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { GlobalErrorHandler } from './error/global-error-handler';
 import { AlertHandlerComponent } from './components/alert-handler/alert-handler.component';
@@ -16,7 +22,10 @@ import { UserLoginComponent } from './components/user-login/user-login.component
   imports: [RouterOutlet, UserLoginComponent, AlertHandlerComponent, AsyncPipe],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
-  providers: [{ provide: ErrorHandler, useClass: GlobalErrorHandler }],
+  providers: [
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
+    MarkdownService,
+  ],
 })
 export class AppComponent implements OnInit {
   constructor(
@@ -48,5 +57,11 @@ export class AppComponent implements OnInit {
         type: 'success',
       });
     }
+  }
+
+  @HostListener('window:beforeunload', ['$event']) onBeforeUnload(
+    event: BeforeUnloadEvent
+  ) {
+    this.markdownService.save();
   }
 }

@@ -2,11 +2,12 @@ import { EditorComponent } from '@/app/components/editor/editor.component';
 import { HeaderComponent } from '@/app/components/header/header.component';
 import { MarkdownService } from '@/app/services/markdown.service';
 import { AfterViewInit, Component } from '@angular/core';
+import { NgxMdEditorComponent } from 'ngx-md-editor';
 
 @Component({
   selector: 'app-md-references',
   standalone: true,
-  imports: [HeaderComponent, EditorComponent],
+  imports: [HeaderComponent, EditorComponent, NgxMdEditorComponent],
   templateUrl: './md-references.component.html',
   styleUrl: './md-references.component.css',
 })
